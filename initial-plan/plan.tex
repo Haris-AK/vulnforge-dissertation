@@ -1,0 +1,240 @@
+% Initial plan using the qproposal class
+%
+% Build: pdflatex plan && bibtex plan && pdflatex plan && pdflatex plan
+% Or with latexmk: latexmk -pdf plan
+
+\documentclass[sans,oneside,single,parskip,raggedright,numeric]{qproposal}
+
+% Tables
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+
+% ------------------------------------------------------------------------------
+% Metadata
+% ------------------------------------------------------------------------------
+
+\title{Initial Plan: Utilising Generative AI to Create Vulnerabilities in Machines for Education}
+\author{Haris Khan (23040365)}
+\supervisor{Amir Javed}
+\date{February 2026}
+
+\keywords{generative AI, cybersecurity education, CTF, vulnerability generation, LLM, sandboxed environments}
+
+% ------------------------------------------------------------------------------
+% Document body
+% ------------------------------------------------------------------------------
+
+\begin{document}
+
+\maketitle
+
+\begin{abstract}
+  This document outlines the initial plan for an automated information security training
+  platform that uses a large language model (LLM) to generate vulnerabilities in ephemeral,
+  sandboxed environments. It describes the problem context and motivation, states the aims
+  and objectives, discusses feasibility constraints, and presents a week-by-week work plan
+  with milestones and deliverables.
+\end{abstract}
+
+% ------------------------------------------------------------------------------
+\section{Project Description}
+% ------------------------------------------------------------------------------
+
+\subsection*{Context and motivation}
+
+I have a significnat interest in information security, and the diversity of attack vectors.
+To improve skills in this realm, hands-on experience is the best way to acquire new knowledge.
+Creating a simulated environment, where users can safely practise these skills was something
+that interested me as it requires careful isolation of sandboxed environments, automatically
+deploying containers; and providing a safe place to hone your skills. In addition to this,
+the emergence of LLMs provides an opportunity to modernize these environments to allow
+infinite customisation and guidance.
+
+\subsection*{Outline of the problem}
+
+The problem with existing educational tools such as HackTheBox~\citep{hackthebox} and
+TryHackMe~\citep{tryhackme} is the static nature of the vulnerabilities and with no direct
+assistance in solving them, it makes it difficult to make progress once stuck. Therefore, a
+solution is where the vulnerabilities are more dynamic, able to be tailored by the user, and
+allow a personalised level of guidance rather than a bullet-point guide. Using generative AI,
+you can customise the level of difficulty, and also use it as an assistant when solving the
+challenge to help probe closer to the solution.
+
+\subsection*{The specific version of it that I intend to address}
+
+A version of the problem where the sandboxed environment is able to be tailored to the
+whatever the user desires, whether it be a simple nginx misconfiguration, or a logic error
+inside an web application. Even if they select the same type of vulnerability, due to the
+polymorphic nature of the LLM, the exploitation method will be different. Furthermore, to
+address the guidance and assistance access, it will leverage the LLMs that will be creating
+the vulnerabilities in order to provide a chatbot for the specific room, with context to it,
+that can help guide the user to the solution, without explicitly providing it.
+
+\subsection*{How I intend to approach the solution}
+
+To simplify the project, the platform will rely on SSH as an access point. Completion will
+be via a `flag'~\citep{ctf-wikipedia} system, similar to those used in existing CTFs.
+
+\subsection*{Background material}
+
+There are many existing CTFs that are used such as picoCTF~\citep{picoctf},
+VulnHub~\citep{vulnhub}, however these providers do not use generative AI to create the
+sandboxes. Some provide an LLM to give assistance, but not as the creator of the
+vulnerability, limiting the potential impact they have.
+
+\subsection*{Why the problem is a sufficient challenge for the project module}
+
+My project will cover virtualization orchestration with type-1 hypervisors, requiring a
+state machine to manage the lifecycle of these machines, and resource handling with clean-up
+of them. There must be strict network segmentation, and escape prevention to ensure the user
+is unable to access any unintended resources. In addition to this, I will have to experiment
+and develop quite complex system prompts to enable LLMs to generate vulnerabilites, which
+with current guardrails may prove difficult.
+
+% ------------------------------------------------------------------------------
+\section{Aims and Objectives}
+% ------------------------------------------------------------------------------
+
+The overall aim is to implement an automated information security training platform that
+utilises an LLM to configure vulnerabilites in ephemeral environments.
+
+\begin{itemize}
+  \item \textbf{Objective 1 --- Orchestration controller.}
+    Design a controller that will orchestrate and configure the containers. This will include
+    having a `master' template, with dynamic configuration based on the vulnerability type,
+    handling of network interfaces, and injection of users' SSH keys to handle access. Risks
+    include a misconfigured environment and the LLM exceeding its scope beyond the container.
+    These will be mitgated with zero-trust access~\citep{ztna-microsoft} and kill switches.
+
+  \item \textbf{Objective 2 --- Generative vulnerability engine.}
+    Implement the vulnerability engine using a local or cloud LLM (depending on resource
+    constraints) to generate scripts and applications that intentionally contain a flaw,
+    then inject them into the container. Risks include hallucinated or non-functional
+    vulnerabilities, and model guardrails preventing generation of security flaws.
+
+  \item \textbf{Objective 3 --- User interface and flag system.}
+    Develop a web dashboard to manage machines, user accounts, and SSH connections, together
+    with a flag-based completion system. Risks include SSH key management, session-state
+    handling, and users struggling to reach web applications inside containers via SSH
+    tunnelling.
+
+  \item \textbf{Objective 4 --- LLM tutor.}
+    Integrate a context-aware LLM tutor into the web UI as a chatbot. Because the same LLM
+    session creates the vulnerability, it will have the full context of the challenge. Risks
+    include the tutor leaking the flag (mitigated by system-level prompts) and handling
+    large contexts; models with large context windows such as Gemini 3
+    Pro~\citep{gemini-3-pro} (1 million input tokens) may prove advantageous here.
+\end{itemize}
+
+% ------------------------------------------------------------------------------
+\section{Feasibility}
+% ------------------------------------------------------------------------------
+
+The main restraint for this project is hardware capable of running a type-1 hypervisor with
+multiple containers and, ideally, a local LLM. I have a personal machine I can use for the
+hypervisor; for the LLM I will require cloud credits or a machine capable of running local
+models. Some larger local models such as Kimi K2.5 require large amounts of RAM
+($>$240\,GB~\citep{kimi-k25}), but smaller models like gpt-oss:20B can run on less powerful
+hardware. There will be some loss in reasoning capability that would have to be considered,
+such as struggling to create certain vulnerabilities.
+
+Regarding ethical considerations, I will have to ensure that the models used are permitted to
+create vulnerabilites for educational purposes. Protocols must be in place to prevent
+vulnerable containers from being accessible externally, such as a time-based kill switch.
+Regarding licensing, many open-weight models carry community licences such as Llama
+3~\citep{llama3-license} which do not pose significant risk. Open-source libraries such as
+Proxmox~\citep{proxmox} will be used throughout.
+
+% ------------------------------------------------------------------------------
+\section{Work Plan}
+% ------------------------------------------------------------------------------
+
+% Column type: paragraph with top alignment and small font
+\newcolumntype{P}[1]{>{\small\RaggedRight\arraybackslash}p{#1}}
+\newcolumntype{C}[1]{>{\small\centering\arraybackslash}p{#1}}
+
+% Compact itemize for use inside table cells
+\newenvironment{cellist}{%
+  \begin{itemize}[nosep,leftmargin=1em,topsep=0pt,partopsep=0pt]
+}{%
+  \end{itemize}
+}
+
+\begin{longtable}{C{1.3cm} P{6.2cm} P{6.2cm}}
+  \toprule
+  \textbf{Weeks} & \textbf{Tasks} & \textbf{Milestones and deliverables} \\
+  \midrule
+  \endfirsthead
+  \toprule
+  \textbf{Weeks} & \textbf{Tasks} & \textbf{Milestones and deliverables} \\
+  \midrule
+  \endhead
+  \bottomrule
+  \endfoot
+
+  1--3 &
+  \begin{cellist}
+    \item Create the initial plan and find any constraints
+    \item Setup the hypervisor and the physical machine where everything will be virtualized on
+    \item Create the `master' template that will be used across generated machines
+    \item Configure network access and security
+    \item Ensure remote access and development is possible from my local machine
+    \item Verify resource allocation for the LLM
+  \end{cellist}
+  &
+  Initial report complete and limitations identified. Proxmox reachable from local machines; able to spin up machines from the master template. Machines isolated from each other and not easily escapable.
+  \\[4pt]
+
+  3--4 &
+  \begin{cellist}
+    \item Develop the `orchestrator' of the virtual machines (script or Ansible playbooks with cloud-init)
+    \item The orchestrator should allow access through SSH
+  \end{cellist}
+  &
+  Orchestrator spins up machines on demand, clones the master template, and injects a specified SSH key. Accessible from an external machine.
+  \\[4pt]
+
+  5--6 &
+  \begin{cellist}
+    \item Test different LLM models for vulnerability generation
+    \item Develop specific prompts to create different vulnerability types, and a system-wide prompt for guardrails
+    \item Implement the injection pipeline so the LLM can alter containers
+  \end{cellist}
+  &
+  Chosen model capable of generating different vulnerability types from prompts. Injection pipeline functional; vulnerability exists on the container after provisioning.
+  \\[4pt]
+
+  7--8 &
+  \begin{cellist}
+    \item Develop the dashboard (account creation, SSH key entry, vulnerability selection, machine provisioning)
+    \item Enable SSH access to containers using functionality from weeks 3--4
+    \item Implement the LLM tutor chatbot
+    \item Allow the user to submit and verify the flag
+  \end{cellist}
+  &
+  Full user login flow working. Container provisioned with selected vulnerability and accessible via SSH. Tutor chatbot answers questions with prior vulnerability context. Flag submission and verification functional.
+  \\[4pt]
+
+  8--9 &
+  \begin{cellist}
+    \item Test and verify site functionality, specifically that flags are achievable and vulnerabilities are present
+  \end{cellist}
+  &
+  Successful deployment across all services; functionality verified across multiple edge cases. Tutor capability tested. Five instances of the same vulnerability generated to measure AI output variety and success rate.
+  \\[4pt]
+
+  10--12 &
+  \begin{cellist}
+    \item Analysis and report writing, evaluating results from the previous week (whether the AI consistently reproduced vulnerabilities)
+  \end{cellist}
+  &
+  Final project report and source code submission ready.
+  \\
+
+\end{longtable}
+
+\bib{bibliography}
+
+\end{document}
