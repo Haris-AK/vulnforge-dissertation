@@ -1,0 +1,293 @@
+% =============================================================================
+% Template dissertation using the qdissertation class
+% =============================================================================
+% This file is the main entry point. Build: make (uses latexmk; see Makefile).
+% Default engine: lualatex. To use another: make ENGINE=pdf or make ENGINE=xe.
+%
+% SPDX-FileCopyrightText: 2026 Frank Langbein <frank@langbein.org>
+% SPDX-License-Identifier: LPPL-1.3c
+% SPDX-License-Identifier: CC-BY-SA-4.0
+%
+% This template and other .tex/.bib files in this directory are part of the
+% same work and may be distributed and/or modified under the LaTeX Project
+% Public License (LPPL), version 1.3c. See LICENSE file.
+%
+% -----------------------------------------------------------------------------
+% Overview (qdissertation class)
+% -----------------------------------------------------------------------------
+% The class is a wrapper around the standard book class. Layout: A4, 12pt,
+% 3cm margins; single line spacing; ragged-right; main text 12pt, footnotes and
+% captions at least 11pt; preliminary pages in roman numerals, then Arabic
+% for main matter. Chapter style: top bar in header, ``Chapter N'' or
+% ``Appendix A'' in header; number/letter and title on first line of chapter.
+%
+% -----------------------------------------------------------------------------
+% Report structure
+% -----------------------------------------------------------------------------
+% Main body: Introduction, Background, Methodology (or ``Specification, Design
+% and Implementation'' / ``Approach''), Results and Evaluation, Conclusions and
+% Future Work, Reflection on Learning. Chapter~3 can be adapted or split; not all
+% sections apply to every project (system design, research, AI/ML). See each
+% chapter file for details and alternatives.
+%
+% Suggested sections at a glance (omit/rename as needed):
+%   1 Introduction:    Motivation and context; Aims and objectives; Contributions;
+%                      Dissertation structure. Optional: Scope, Terminology.
+%   2 Background:      Context; Related work (or Literature review); Problem statement.
+%                      Optional: Theory and concepts; Stakeholders and constraints.
+%   3 Methodology:     Depends on project type. System design: Specification, System
+%                      design, Implementation. Research: Research design, Literature
+%                      and evidence, Approach and solution, Implementation. AI/ML:
+%                      Specification, Datasets, AI/ML models, System design, Implementation.
+%                      Optional: Ethical considerations; Summary.
+%   4 Results:         Setup (or Experimental setup); Results; Discussion; Limitations.
+%                      Optional: Ablation studies; Comparison with baselines.
+%   5 Conclusions:     Conclusions; Future work.
+%   6 Reflection:      Critical narrative; Analysis and application; Implications
+%                      for future practice. (Omit chapter if not required.)
+%
+% -----------------------------------------------------------------------------
+% Variations (degree, structure)
+% -----------------------------------------------------------------------------
+% Select your degree via \degree below; commented alternatives shown for
+% BSc, MSc.
+%
+% -----------------------------------------------------------------------------
+% Class options
+% -----------------------------------------------------------------------------
+% Font: sans (default), serif, or hacker;
+%   serif = serif text and math; hacker = typewriter/monospace open-source font throughout.
+% Layout: oneside (default) or twoside.
+% Citation: numeric (default) = plainnat, [1], [1,2]; harvard = agsm, (Author, 2000).
+% Alignment: raggedright (default) = ragged-right; justified = fully justified text.
+% Line spacing: single (default); onehalfspacing; or linespread115/linespread12
+%   for institutions allowing 1.0--1.3.
+% Paragraph style: parskip (default) = space between paragraphs, no first-line indent;
+%   parindent = traditional first-line indent, minimal parskip.
+% Optional typography:
+%   fullwidth  = enable \begin{fullwidth}...\end{fullwidth} and fullwidthfigure/
+%                fullwidthtable environments that extend into the margin (requires
+%                changepage or chngpage).
+%   italic = chapter, section, subsection and captions in italic (default: bold/roman).
+% Engine: pdfTeX vs XeLaTeX/LuaLaTeX is detected for font setup.
+%
+% Defaults (no option): link colour DarkBlue, cite/URL colour DarkGreen; tight list
+% margins; quote, quotation, and verse in smaller type with indents;
+% \epigraph{quote}{source} for chapter/section-opening quotes.
+% See Section~\ref{sec:ch1-reference} in Chapter~1 for examples of \newthought,
+% fullwidth, fullwidthfigure, quote, and epigraph.
+%
+% -----------------------------------------------------------------------------
+% Metadata and title page
+% -----------------------------------------------------------------------------
+% \title, \author, \degree, \university, \date drive the generated title page.
+%
+% -----------------------------------------------------------------------------
+% License and copyright (SPDX)
+% -----------------------------------------------------------------------------
+% \copyrightholder defaults to \author; \licenseyear defaults to current year.
+% When \license is set: (1) a copyright page is inserted after the abstract;
+% (2) a License chapter is inserted just before the bibliography.
+% If qdissertation-licenses.tex is present, the class loads it for full
+% license text; otherwise name + URL only.
+%
+% -----------------------------------------------------------------------------
+% Float placement (figures, tables, algorithms)
+% -----------------------------------------------------------------------------
+% Placement letters: h = here, t = top, b = bottom, p = float page. E.g.\@
+% [htbp], [t], [!t]. Use [H] (float pkg) sparingly. The class relaxes float
+% parameters so more floats fit per page.
+%
+% -----------------------------------------------------------------------------
+% Headings: use title case for chapter titles (capitalise major words; keep
+% articles, conjunctions, and short prepositions lowercase unless first/last
+% word). Use sentence case for sections, subsections, and below (only the
+% first letter and proper nouns capitalised). Or adjust as preferred, but keep
+% it consistent.
+%
+% -----------------------------------------------------------------------------
+% LaTeX formatting: \citep/\citet (not \cite); ~ before \citep/\citet after a word;
+% \@ after abbreviation; ~ for non-breaking (Fig.~1); -- en-dash, --- em-dash.
+%
+% -----------------------------------------------------------------------------
+% Reviewer comments: %ID (e.g.\@ %F) at line start, space after ID. Include
+% comments directly in the text and discussions or questions can be included
+% as comments afterwards. Generally, these comments should be inserted closely
+% after the sentence or element it refers to. Delete the commetns when
+% addressed; do not keep ``for checking''. Edits can be easier found via git
+% diffs. Find comments with: grep -r '^%[A-Za-z] ' *.tex */*.tex
+%
+% -----------------------------------------------------------------------------
+% Footnotes: prefer putting short asides in parentheses in the main text. Use
+% footnotes only sparingly when they add value (e.g.\@ translations, optional
+% clarifications that would interrupt the flow).
+%
+% -----------------------------------------------------------------------------
+% Word count: run ``make wordcount'' (texcount -inc; per-file and total with
+% caption words shown separately so you can apply your institution's rules).
+% Word limits typically apply to main body only; exclude front matter, captions,
+% appendices. Confirm your institution's word limits and structure before submission.
+%
+% -----------------------------------------------------------------------------
+% Submission: ensure PDF has embedded fonts (pdflatex does this by default),
+% and is compatible with your institution's requirements (e.g. no encryption, be
+% careful with obfuscation).
+% =============================================================================
+\documentclass[sans,oneside,numeric,raggedright,fullwidth]{qdissertation}
+
+% -----------------------------------------------------------------------------
+% Optional: use a different acronyms file
+% -----------------------------------------------------------------------------
+%\renewcommand{\qdissertationacronymfile}{my-acronyms.tex}
+
+% -----------------------------------------------------------------------------
+% Useful packages for dissertation writing
+% -----------------------------------------------------------------------------
+
+% Tables
+\usepackage{tabularray}      % Flexible column types, rules, longtblr for multi-page tables
+\usepackage{booktabs}        % Alternative (traditional): \toprule, \midrule, \bottomrule
+\usepackage{longtable}       % Tables that span multiple pages (or use tabularray longtblr)
+%\usepackage{multirow}        % Span multiple rows in tables
+%\usepackage{multicol}        % Multiple columns in text/tables
+%\usepackage{colortbl}        % Coloured rows/cells in tables
+
+% Math, symbols, related
+\usepackage{mathtools}       % Extensions to amsmath (matrix envs, \DeclarePairedDelimiter)
+\usepackage{pifont}          % Dingbat symbols, e.g. \ding{51}, \ding{43}
+\usepackage{siunitx}         % Units and numbers: \SI{3}{m/s}, \num{1000}
+\usepackage{relsize}         % \textlarger, \textsmaller for relative font sizing
+\usepackage[version=4]{mhchem} % Chemical formulae: \ce{H2O}, \ce{CO2}, \ce{^1H-NMR}
+
+% Floats
+\usepackage{float}           % [H] = here definitely
+\usepackage{stfloats}        % Improved placement for bottom floats
+\usepackage{subcaption}      % Subfigures with (a), (b) and per-subfigure captions
+\usepackage{rotating}        % \begin{sidewaystable}, \begin{sidewaysfigure} for wide content
+
+% Algorithms
+\usepackage{algorithm}       % Numbered algorithm floats and List of Algorithms
+\usepackage[noend]{algpseudocode}
+
+% Other useful packages
+\usepackage{lipsum}          % Placeholder text: \lipsum[n], \lipsum[1-5], etc.
+\usepackage{enumitem}        % Customise list labels, spacing
+\usepackage{verbatim}        % \begin{verbatim} ... \end{verbatim} for code
+\usepackage{afterpage}       % \afterpage{\clearpage} to clear after current page
+
+% -----------------------------------------------------------------------------
+% Dissertation metadata
+% -----------------------------------------------------------------------------
+\title{Template Dissertation Title in Title Case}
+\author{Your Full Name}
+% Degree
+\degree{BSc Computer Science}
+% \degree{MSc Advanced Computer Science}
+\university{Your University}
+\date{February 2026}
+
+% License and copyright following SPDX. (optional; comment out if not needed).
+% Needs qdissertation-licenses.tex for license text in the License chapter.
+\license{CC-BY-SA-4.0}
+\copyrightholder{Your Full Name}
+\licenseyear{2026}
+
+\begin{document}
+
+\frontmatter
+
+% \maketitle{...} produces: title page, (copyright page if \license set), abstract,
+% then frontlists: TOC, List of Figures, List of Tables, List of Algorithms,
+% List of Acronyms (if acronyms.tex defines \newacronym).
+% Add \dedication{...} and \makededication separately if desired.
+\maketitle{%
+  % Abstract: typically 200--300 words. State problem, methods, and main results.
+  This is the abstract: a short, self-contained summary of the dissertation.
+  It should state the problem, methods, and main results so that a reader
+  can understand the scope without reading the full document. Replace with
+  your own abstract.
+}
+
+% -----------------------------------------------------------------------------
+% Optional front-matter chapters (unnumbered)
+% -----------------------------------------------------------------------------
+
+% Replace with your dedication (one or two lines); optional.
+\dedication{%
+  To my family.%
+}
+
+\chapter{Acknowledgements}
+% Replace with your acknowledgements. Here you can also acknowledge any contributions from other
+% parties to the work.
+I thank my supervisors and colleagues for their support.
+
+%\chapter{Declaration}
+% Replace with your declaration (e.g. that the work is your own, and any
+% required statements on collaboration, publications, or word count).
+% Often this is submitted in separate forms or not needed, and does not
+% have to be here.
+%This dissertation is the result of my own work. Where reference is made to other work, this is indicated in the text.
+
+%\chapter{Publications, data and code}
+\chapter{Data and Code}
+% List publications, if available or maybe planned, and state where data and code produced for this
+% dissertation are available. Note, you usually must submit any sources and simlar you ahve
+% written with your dissertation.
+% Replace with your own entries; you can use \citep{key} for publications.
+
+%\section{Publications}
+% Papers (and optionally other outputs) that form part of or arise from this thesis.
+% These can also be discussed in the introduction (what has been published or is planned).
+%\begin{enumerate}
+%  \item Author. Title. \textit{Journal}, volume, pages, year.~\citep{example-paper}
+%\end{enumerate}
+
+\section{Data}
+% Datasets produced in this work and where they are available (repository, DOI, or ``on request'').
+Data supporting this dissertation are available from [repository/DOI or ``available on request'']. Replace with your statement.
+
+\section{Code}
+% Software or code produced in this work and where it is available (repository, DOI, etc.).
+Code produced for this dissertation is available from [repository/DOI or ``available on request'']. Replace with your statement.
+
+\mainmatter
+
+% -----------------------------------------------------------------------------
+% Main chapters (suggested structure in each chapter file; adjust to your project)
+% -----------------------------------------------------------------------------
+\chapter{Introduction}\label{ch1}
+\input{C1/chapter1}
+
+\chapter{Background}\label{ch2}
+\input{C2/chapter2}
+
+\chapter{Methodology}\label{ch3}
+\input{C3/chapter3}
+
+\chapter{Results and Evaluation}\label{ch4}
+\input{C4/chapter4}
+
+\chapter{Conclusions and Future Work}\label{ch5}
+\input{C5/chapter5}
+
+\chapter{Reflection on Learning}\label{ch6}
+\input{C6/chapter6}
+
+\backmatter
+
+% -----------------------------------------------------------------------------
+% Appendices
+% -----------------------------------------------------------------------------
+\appendix
+\chapter{Supplementary Material}\label{app:supp}
+\input{AA/appendixA}
+
+\chapter{Additional Results}\label{app:results}
+\input{AB/appendixB}
+
+% Bibliography (always last): \bib{bibfile} uses natbib (numeric or harvard per class option)
+% and inserts the License chapter if \license was set.
+\bib{bibliography}
+
+\end{document}

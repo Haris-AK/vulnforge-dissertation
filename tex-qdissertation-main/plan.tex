@@ -1,0 +1,169 @@
+% plan.tex -- Example initial project plan / proposal using the qproposal class
+%
+% This template is intended for short project plans and proposals, such as
+% initial plans for dissertation / project modules. It follows the structure
+% suggested for typical initial plans (project description, aims and objectives,
+% feasibility, work plan, references), but remains generic so it can be reused
+% in other contexts.
+%
+% Recommended length for an initial plan of this style is around 1,500 words
+% (excluding references, figures and tables), but this is *not* enforced by
+% the class - adjust as needed for your institution or project.
+%
+% SPDX-FileCopyrightText: 2026 Frank Langbein <frank@langbein.org>
+% SPDX-License-Identifier: LPPL-1.3c
+
+\documentclass[sans,oneside,single,parskip,raggedright,numeric]{qproposal}
+
+% ------------------------------------------------------------------------------
+% Metadata
+% ------------------------------------------------------------------------------
+
+% The title will typically start with "Initial Plan:" followed by your project title.
+\title{Initial Plan: A Sample Project Title}
+
+% Your name (and optionally co-authors, if appropriate).
+\author{Student Name}
+
+% Optional supervisor name - printed under the author line when set.
+\supervisor{Supervisor Name}
+
+% Optional date (defaults to \today if omitted).
+% \date{2 March 2026}
+
+% Optional SPDX license identifier. If set, \bib will add a short License section
+% before the references.
+\license{CC-BY-NC-SA-4.0}
+\copyrightholder{Student Name}
+\licenseyear{2026}
+
+% If you want keywords to appear at the end of the abstract, set them here.
+\keywords{project planning, initial plan, dissertation}
+
+% ------------------------------------------------------------------------------
+% Document body
+% ------------------------------------------------------------------------------
+
+\begin{document}
+
+\maketitle
+
+% A short overview of the project and the purpose of the plan (typically
+% a small paragraph). This does not count towards the usual word limits
+% in many guidelines, but check your local rules.
+\begin{abstract}
+  This document outlines the initial plan for a sample project. It briefly
+  describes the problem and its context, states aims and objectives, discusses
+  feasibility issues, and presents a work plan with milestones and deliverables.
+\end{abstract}
+
+% ---------------------------------------------------------------------------
+% 1. Project Description
+% ---------------------------------------------------------------------------
+%
+% Briefly describe the project, its context and motivation, and the specific
+% problem you intend to address. Explain the background only to the extent
+% needed to understand the plan; a full literature review is not required here.
+%
+% You may also justify why the problem is an appropriate challenge for a
+% final-year / master-level project, and clarify the scope (what is in and
+% out of scope for this plan).
+
+\section{Project Description}
+
+Describe the overall context and motivation for your project, followed by a
+clear and specific problem statement. Outline which aspects of the problem
+you will address within the constraints of the project and which aspects
+are explicitly out of scope~\citep{example-paper}. According
+to~\citet{example-book}, we will address the problem in the following way.
+
+% ---------------------------------------------------------------------------
+% 2. Aims and Objectives
+% ---------------------------------------------------------------------------
+%
+% State an overall aim (one or two sentences) and then list two to four
+% specific objectives you intend to achieve. Each objective should be
+% concrete and realistic for the available time, while still providing
+% sufficient challenge.
+%
+% For each objective, briefly note any likely or highly likely risks and how
+% you would mitigate them (for example, by scaling back scope or relaxing
+% non-essential requirements). There is no need to consider unlikely risks,
+% and personal extenuating circumstances are usually handled separately.
+
+\section{Aims and Objectives}
+
+The overall aim of this project is to \ldots
+
+\begin{itemize}
+  \item Objective 1: \ldots\ (include a brief note on likely risks and possible
+    mitigations if relevant).
+  \item Objective 2: \ldots
+  \item Objective 3: \ldots
+\end{itemize}
+
+% ---------------------------------------------------------------------------
+% 3. Feasibility
+% ---------------------------------------------------------------------------
+%
+% Discuss any issues that may affect the feasibility of the project, such as:
+%   - ethical approval (e.g. user studies, personal data),
+%   - legal issues (e.g. intellectual property, licensing of software or data),
+%   - special resources (e.g. non-standard hardware, paid APIs or datasets).
+%
+% For each issue, describe how it will be handled and what the impact on the
+% project would be if things do not go as planned (risk and mitigation).
+% If you reasonably expect no such issues, state this briefly with justification.
+
+\section{Feasibility}
+
+Summarise any ethical, legal or resource-related constraints relevant to
+the project, and explain how you will address them. If you depend on external
+approvals or resources, outline what happens if these are delayed or not
+available and how you would adapt the project in that case.
+
+% ---------------------------------------------------------------------------
+% 4. Work Plan
+% ---------------------------------------------------------------------------
+%
+% Provide a work plan over the relevant period (for example, weeks 1–12 of a
+% term), including:
+%   - clear milestones (what you expect to have achieved by a given date),
+%   - tasks leading up to each milestone,
+%   - expected deliverables (e.g. prototype, evaluation results, report draft).
+%
+% A simple week-by-week list with dates, milestones and main tasks is often
+% sufficient. Consider other commitments (modules, exams, holidays) and reserve
+% time for evaluation and writing towards the end of the project.
+
+\section{Work Plan}
+
+Outline your planned work over the project period. For example:
+
+\begin{description}
+  \item[Weeks 1--2] Refine project description, confirm feasibility, and agree
+    aims and objectives with the supervisor. Identify key background reading.
+  \item[Weeks 3--6] Design and implement the main solution approach in one or
+    more iterations. Record design decisions and intermediate results.
+  \item[Weeks 7--9] Evaluate the approach (e.g. experiments, user studies),
+    analyse results, and, if time permits, refine or extend the solution.
+  \item[Weeks 10--12] Consolidate documentation and write the main report
+    chapters. Reserve buffer time for tasks that overrun and final polishing.
+\end{description}
+
+You may replace this list by a more detailed table or Gantt chart if you
+prefer, as long as milestones, tasks and deliverables are clear.
+
+% ---------------------------------------------------------------------------
+% References
+% ---------------------------------------------------------------------------
+%
+% If you cite any sources in the plan (recommended where appropriate), include
+% them here. The qproposal class uses natbib; \bib will choose a numeric or
+% author-year style based on the class options.
+
+% Use \bib with an external .bib file (an example bibliography.bib is provided
+% with the qdissertation package).
+\bib{bibliography}
+
+\end{document}

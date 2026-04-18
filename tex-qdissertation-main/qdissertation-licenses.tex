@@ -1,0 +1,182 @@
+% qdissertation-licenses.tex -- Full license texts for use with \license{SPDX-ID}
+% \input this file in your preamble (after \license{...}) to include full text
+% in the License chapter instead of only a URL. Add more below as needed.
+%
+% SPDX-FileCopyrightText: 2026 Frank Langbein <frank@langbein.org>
+% SPDX-License-Identifier: LPPL-1.3c
+
+\makeatletter
+
+% -----------------------------------------------------------------------------
+% MIT License (short; full text included)
+% -----------------------------------------------------------------------------
+\expandafter\def\csname qdissertation@licensetext@MIT\endcsname{%
+  \begin{quote}\small\raggedright
+    MIT License
+
+    Copyright (c) \ifstrempty{\qdissertation@licenseyear}{\number\year}{\qdissertation@licenseyear}\ %
+    \ifstrempty{\qdissertation@copyrightholder}{\qdissertation@author}{\qdissertation@copyrightholder}
+
+    Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the ``Software''), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
+
+    The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
+
+    THE SOFTWARE IS PROVIDED ``AS IS'', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+  \end{quote}%
+}
+
+% -----------------------------------------------------------------------------
+% BSD 2-Clause "Simplified" License
+% -----------------------------------------------------------------------------
+\expandafter\def\csname qdissertation@licensetext@BSD-2-Clause\endcsname{%
+  \begin{quote}\small\raggedright
+    Copyright (c) \ifstrempty{\qdissertation@licenseyear}{\number\year}{\qdissertation@licenseyear}\ %
+    \ifstrempty{\qdissertation@copyrightholder}{\qdissertation@author}{\qdissertation@copyrightholder}
+
+    Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+    1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+    2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  \end{quote}%
+}
+
+% -----------------------------------------------------------------------------
+% BSD 3-Clause "New" or "Revised" License
+% -----------------------------------------------------------------------------
+\expandafter\def\csname qdissertation@licensetext@BSD-3-Clause\endcsname{%
+  \begin{quote}\small\raggedright
+    Copyright (c) \ifstrempty{\qdissertation@licenseyear}{\number\year}{\qdissertation@licenseyear}\ %
+    \ifstrempty{\qdissertation@copyrightholder}{\qdissertation@author}{\qdissertation@copyrightholder}
+
+    Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+    1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+    2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+    3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS ``AS IS'' AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+  \end{quote}%
+}
+
+% -----------------------------------------------------------------------------
+% Creative Commons Attribution 4.0 (human-readable summary; full legalcode at URL)
+% -----------------------------------------------------------------------------
+\expandafter\def\csname qdissertation@licensetext@CC-BY-4.0\endcsname{%
+  \begin{quote}\small\raggedright
+    You are free to: \textbf{Share} --- copy and redistribute the material in any medium or format for any purpose, even commercially; \textbf{Adapt} --- remix, transform, and build upon the material for any purpose, even commercially. The licensor cannot revoke these freedoms as long as you follow the license terms.
+
+    Under the following terms: \textbf{Attribution} --- You must give appropriate credit, provide a link to the license, and indicate if changes were made. You may do so in any reasonable manner, but not in any way that suggests the licensor endorses you or your use. No additional restrictions --- You may not apply legal terms or technological measures that legally restrict others from doing anything the license permits.
+
+    Full legal code: \url{https://creativecommons.org/licenses/by/4.0/legalcode}
+  \end{quote}%
+}
+
+% -----------------------------------------------------------------------------
+% CC-BY-SA-4.0 (summary + link)
+% -----------------------------------------------------------------------------
+\expandafter\def\csname qdissertation@licensetext@CC-BY-SA-4.0\endcsname{%
+  \begin{quote}\small\raggedright
+    You may share and adapt the work under the terms of the Creative Commons Attribution-ShareAlike 4.0 International License: appropriate credit, link to the license, indicate changes; adaptations must be shared under the same license.
+
+    Full legal code: \url{https://creativecommons.org/licenses/by-sa/4.0/legalcode}
+  \end{quote}%
+}
+
+% -----------------------------------------------------------------------------
+% Remaining CC licenses (summary + link)
+% -----------------------------------------------------------------------------
+\expandafter\def\csname qdissertation@licensetext@CC-BY-NC-4.0\endcsname{%
+  \begin{quote}\small\raggedright
+    You may share and adapt the work for non-commercial purposes under the Creative Commons Attribution-NonCommercial 4.0 International License. Attribution required; adaptations under the same license.
+
+    Full legal code: \url{https://creativecommons.org/licenses/by-nc/4.0/legalcode}
+  \end{quote}%
+}
+\expandafter\def\csname qdissertation@licensetext@CC-BY-NC-SA-4.0\endcsname{%
+  \begin{quote}\small\raggedright
+    You may share and adapt the work for non-commercial purposes under CC Attribution-NonCommercial-ShareAlike 4.0. Attribution required; adaptations under the same license.
+
+    Full legal code: \url{https://creativecommons.org/licenses/by-nc-sa/4.0/legalcode}
+  \end{quote}%
+}
+\expandafter\def\csname qdissertation@licensetext@CC-BY-NC-ND-4.0\endcsname{%
+  \begin{quote}\small\raggedright
+    You may share the work unchanged for non-commercial purposes under CC Attribution-NonCommercial-NoDerivatives 4.0. Attribution required; no derivatives.
+
+    Full legal code: \url{https://creativecommons.org/licenses/by-nc-nd/4.0/legalcode}
+  \end{quote}%
+}
+\expandafter\def\csname qdissertation@licensetext@CC-BY-ND-4.0\endcsname{%
+  \begin{quote}\small\raggedright
+    You may share the work unchanged under CC Attribution-NoDerivatives 4.0. Attribution required; no derivatives.
+
+    Full legal code: \url{https://creativecommons.org/licenses/by-nd/4.0/legalcode}
+  \end{quote}%
+}
+\expandafter\def\csname qdissertation@licensetext@CC0-1.0\endcsname{%
+  \begin{quote}\small\raggedright
+    The work is dedicated to the public domain under CC0 1.0 Universal. To the extent possible under law, the author has waived all copyright and related or neighbouring rights. You may copy, modify, distribute and perform the work, even for commercial purposes, without asking permission.
+
+    Full legal code: \url{https://creativecommons.org/publicdomain/zero/1.0/legalcode}
+  \end{quote}%
+}
+
+% -----------------------------------------------------------------------------
+% Apache-2.0, GPL, AGPL, GFDL, LPPL (summary + URL)
+% -----------------------------------------------------------------------------
+\expandafter\def\csname qdissertation@licensetext@Apache-2.0\endcsname{%
+  \begin{quote}\small\raggedright
+    Licensed under the Apache License, Version 2.0: you may use, reproduce, distribute, and modify the work, subject to the terms and conditions of the license (including preservation of copyright and license notices, and a copy of the license with distributions).
+
+    Full text: \url{https://www.apache.org/licenses/LICENSE-2.0}
+  \end{quote}%
+}
+\expandafter\def\csname qdissertation@licensetext@GPL-3.0-only\endcsname{%
+  \begin{quote}\small\raggedright
+    This work is licensed under the GNU General Public License v3.0 only. You may use, modify, and distribute it under the same license; source must be made available for modified versions.
+
+    Full text: \url{https://spdx.org/licenses/GPL-3.0-only.html}
+  \end{quote}%
+}
+\expandafter\def\csname qdissertation@licensetext@GPL-3.0-or-later\endcsname{%
+  \begin{quote}\small\raggedright
+    This work is licensed under the GNU General Public License v3.0 or later. You may use, modify, and distribute it under the same license; source must be made available for modified versions.
+
+    Full text: \url{https://spdx.org/licenses/GPL-3.0-or-later.html}
+  \end{quote}%
+}
+\expandafter\def\csname qdissertation@licensetext@AGPL-3.0-only\endcsname{%
+  \begin{quote}\small\raggedright
+    This work is licensed under the GNU Affero General Public License v3.0 only. Same as GPL-3.0 with an additional requirement: if you run a modified version on a network server, you must make the source available to its users.
+
+    Full text: \url{https://spdx.org/licenses/AGPL-3.0-only.html}
+  \end{quote}%
+}
+\expandafter\def\csname qdissertation@licensetext@AGPL-3.0-or-later\endcsname{%
+  \begin{quote}\small\raggedright
+    This work is licensed under the GNU Affero General Public License v3.0 or later. Same as GPL-3.0 with the network-use source requirement.
+
+    Full text: \url{https://spdx.org/licenses/AGPL-3.0-or-later.html}
+  \end{quote}%
+}
+\expandafter\def\csname qdissertation@licensetext@GFDL-1.3\endcsname{%
+  \begin{quote}\small\raggedright
+    This work is licensed under the GNU Free Documentation License 1.3. You may copy, redistribute, and modify it under the terms of the GFDL; modified versions must be under the GFDL and carry transparent copies.
+
+    Full text: \url{https://www.gnu.org/licenses/fdl-1.3.html}
+  \end{quote}%
+}
+\expandafter\def\csname qdissertation@licensetext@LPPL-1.3c\endcsname{%
+  \begin{quote}\small\raggedright
+    This work is licensed under the LaTeX Project Public License 1.3c. You may distribute and/or modify it under the terms of the LPPL; modified files must be clearly marked and the license preserved.
+
+    Full text: \url{https://www.latex-project.org/lppl/lppl-1-3c.html}
+  \end{quote}%
+}
+
+\makeatother

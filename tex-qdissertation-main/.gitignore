@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: 2026 Frank Langbein <frank@langbein.org>
+# SPDX-License-Identifier: LPPL-1.3c
+#
+# LaTeX build artifacts (pdflatex, makeglossaries, bibtex)
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.loa
+*.bbl
+*.blg
+*.run.xml
+*.bcf
+*.acn
+*.acr
+*.alg
+*.glg
+*.glo
+*.gls
+*.ist
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+/main.pdf
+/plan.pdf
+/fonts/
