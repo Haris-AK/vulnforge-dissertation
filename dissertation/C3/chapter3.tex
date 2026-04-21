@@ -49,9 +49,22 @@ This chapter describes how the problem was addressed. Choose sections that fit y
 \lipsum[19-20]
 
 \section{Implementation}\label{sec:impl}
-% Realisation: key implementation choices and critical code; avoid describing every module. Optional: tools, platform, problems encountered.
 
-\lipsum[21-22]
+\subsection{Introduction}
+
+The implementation of this system utilises ephermeral Linux containers, injecting intentional vulnerabilites into them, exposing them to a student through a controlled network path, verifiying the challenge through a flag, and prov
+
+\subsection{Overall System Architecture}
+\subsection{Infrastructure orchestration and ephemeral lab provisioning}
+\subsubsection{Proxmox and container model}
+\subsubsection{Ansible as the orchestration layer}
+\subsubsection{Network access and learner connectivity}
+\subsubsection{Automatic cleanup and the TTL reaper}
+\subsection{LLM driven vulnerability generation and injection}
+\subsection{Web application}
+
+
+
 
 \section{Summary}\label{sec:summary}
 % Optional: short summary of the methodology. Omit if the chapter is already concise.

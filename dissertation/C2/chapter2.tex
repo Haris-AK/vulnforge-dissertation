@@ -11,23 +11,23 @@
 % Assume a competent reader; avoid lengthy descriptions of standard tools.
 % =============================================================================
 
-This chapter provides the background needed to understand the project: the wider context, existing solutions or related work, and a clear problem statement (and research question(s) where applicable). Replace with your own review.
-
-\lipsum[1-2]
-
 \section{Context}\label{sec:context}
-% Wider context, domain, motivation. Optional subsections: stakeholders,
-% constraints, assumptions.
 
-\lipsum[3-4]
+Cyber security education has steadily moved towards practical scenario based learning, honing skills rather than declaring them through guided courses. Students need to be able to understand how specific vulnerabilities are exploited and work 'in the wild' rather than just understanding definitions such as SQL injection or privilege escalation. \gls{ctf} exercises have become a widely used educational tool, with prior work arguing that they complement traditional teaching and cover knowledge and skills in a way that map well to cyber security training (Švábenský et al., 2021)(\cite{svabensky_automated_2024}). Within this, VulnForge attempts to address a specific aspect of this problem, whether generative AI can be used to create and manage personalised vulnerable training environments that remain educationally useful, address shortcomings of existing applications, operationally safe and practically deployable.
+
+Existing cyber security training is dominated by static, pre-authored challenges that will often expose the learner to the same vulnerability, scenario, and flag each time. There is no mainstream platform that currently offers generative AI to synthesis vulnerabilities paired with a context aware tutor. Providing such a platform can help turn abstract concepts into simulated practice. Commercial and community platforms were built with a shared architectural assumption; once a challenge is authored, reviewed, and published, every user will encounter an identical artifact. Although this assumption provides positive operational economics, it also underlies the most commonly cited pedagogical weakness. The static challenges tend to overemphasize technical exploitation, which can introduce increased cost and safety burdens. 
 
 \section{Related work}\label{sec:related}
-% Prior solutions, methods, or systems; identify gaps your work addresses.
-% Optional subsections: by theme, chronology, or type (e.g.\@ systems, methods, theory).
 
-\lipsum[5-6]
+Existing platforms have already proven the value of hands on training. Hack The Box Academy presents cybersecurity training in a highly interactive process, with target hosts, checkpoints, exercises and skill assessments that allow learners to reproduce techniques they have learnt about rather than simply read about them (add katsantnis reference)) argues that cyber ranges have become important learning and training tools, but notes that their design is often hindered by a lack of shared standards and metholodigies. T
 
 \section{Problem statement}\label{sec:problem}
-% Clear statement of the problem and, if applicable, research question(s).
 
-\lipsum[7-8]
+The background discussion demonstrates the clear problems within this domain, it has proven that cyber security labs and AI tutors give real value to the end user. But the problem lies in whether they can be combined into a coherent, safe, and educationally useful system that generates individuals vulnerable, isolated environments on demand, then expose them through controlled infrastructure. From here, it should support the learner with contextual guidance, and reliably clean-up the environment afterwards. Put simply, VulnForge will be investigating whether generative AI can move from just being an accessory that people use, to being part of the content production and delivery pipeline itself. 
+
+This leads to the following questions:
+\begin{enumerate}
+    \item To what extent can a \gls{llm} pipeline generate vulnerability specifications that are both deployable and sufficiently diverse to support cyber security training within defined challenge categories?
+    \item How can generated challenges be deployed and exposed through isolated, short-lived environments without undermining host safety , challenge integrity or resource control?
+    \item Relative to a purely curated challenge library, does an on-demand generated approach offer meaningful improvement in re-playability and education?
+\end{enumerate}
