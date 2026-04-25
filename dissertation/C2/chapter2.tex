@@ -35,7 +35,7 @@ The closest pre-cursor to wide adoption of LLMs was the Security Scenario Genera
 The most recent example of an LLM driven agent is AgentCyTE\cite{rodriguez_agentcyte_2025}. This uses XML files for the CORE network emulator, integrating CVEs from Vulnhub into training scenarios. This is the closest current example to the LLM generated approach that VulnForge uses. However, critically, AgentCyTE's LLM modifies scenario creation, using a library of pre-selected CVE-backed docker images; it does not synthesize new vulnerabilities. 
 
 \section{LLMs as authors of insecure code}\label{sec:LLMs}
-OpenAI's Codex release in 2023 established that transformer LLMs trained on public 
+The empirical evidence that LLMs reliably produce security relevant code is extensive enought that it constitutes an established finding rather than a speculative one. The foundational result is from Pearce et al (2022)\cite{} whose systematic evaluation of Github Copilot's code contributions across 89 scnearios drawn from MITREs 2021 Top 25 Common Weakness Enumeration found that approximately 40 percent of generated programs contained exploitable vulnerabilites. This was concentrated in CWEs for buffer overlows, SQL injections and use after free. This demonstrates that LLMS, will, without special prompting insert vulnerability classes that are valuable for training purposes. 
 
 \section{Problem statement}\label{sec:problem}
 
