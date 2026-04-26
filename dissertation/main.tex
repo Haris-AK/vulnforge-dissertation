@@ -153,6 +153,12 @@
 %\usepackage{colortbl}        % Coloured rows/cells in tables
 \usepackage{booktabs}
 \usepackage{tabularx}
+\usepackage{threeparttable}
+\usepackage{array}
+\usepackage{makecell}
+\newcommand{\cmark}{\ding{51}}
+\newcommand{\xmark}{\ding{55}}
+\newcommand{\pmark}{\textasciitilde}
 
 % Math, symbols, related
 \usepackage{mathtools}       % Extensions to amsmath (matrix envs, \DeclarePairedDelimiter)
@@ -176,6 +182,10 @@
 \usepackage{enumitem}        % Customise list labels, spacing
 \usepackage{verbatim}        % \begin{verbatim} ... \end{verbatim} for code
 \usepackage{afterpage}       % \afterpage{\clearpage} to clear after current page
+
+% Font
+% Times New Roman
+\usepackage{mathptmx}
 
 \usepackage{titlesec}
 \titleformat{\subsubsection}[runin]{\normalfont\bfseries}{\thesubsubsection}{1em}{}

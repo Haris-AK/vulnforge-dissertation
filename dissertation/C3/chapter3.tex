@@ -29,6 +29,22 @@ This chapter describes how the problem was addressed. Choose sections that fit y
 \section{Specification}\label{sec:spec}
 % System design: requirements (what the system must do; optional subsections: functional, non-functional). Research: problem and what is required of a solution.
 
+VulnForge has to solve three key, connected problems. Firstly, it must provide a usable web interface that allows users to create an account, store an SSH public key, choose a vulnerability category and launch a challenge. Secondly, it must safely orchestrate infrastructure code: create an isolated container, inject the user's SSH key, apply an LLM generated vulnerability specification, and then clean up after usage. Thirdly, it must integrate a generative AI tutor in a constrained way so that the LLM produces useful challenge context, without exposing the answer directly. 
+
+\subsection{Scope and assumptions}\label{sec:scope}
+
+The system is designed as a controlled environment for educational use, not for public scale internet usage. A user interacts with a web dashboard with their challenge machine through SSH (or a web-interface when appropriate for the challenge). The vulnerable environment will be a Ubuntu 24.04 LXC container hosted on a Proxmox VE hypervisor. The container is intended to be ephemeral, to be destroyed either after a time expiration, the challenge is completed or if it is manually deleted.  
+
+The main operating assumptions are the following:
+\begin{itemize}
+    \item Users authenticate through the web application before starting a challenge
+    \item Each user stores a SSH public key in their account settings before starting a challenge
+    \item Students connect to a challnege as a non-root Linux user called `student`
+    \item The `student` user has no default sudo access, any privilege escalation must be gained through the generated vulnerability
+    \item Each user must have at most one challenge active at any time
+    \item The platform stores the flag server side, and does not send it to the user
+    \item The vulnerable container is reachable only through the intended lab path
+\end{itemize}
 
 \section{Datasets}\label{sec:datasets}
 % AI/ML / empirical: data sources, preprocessing, train/validation/test split. Omit if not data-driven.
