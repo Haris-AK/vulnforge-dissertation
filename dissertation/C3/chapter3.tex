@@ -19,13 +19,6 @@
 %                   Literature and evidence; Summary.
 % =============================================================================
 
-This chapter describes how the problem was addressed. Choose sections that fit your project type; omit or merge as needed. Replace with enough detail for reproduction.
-
-
-\section{Research design}\label{sec:research-design}
-% Research: overall approach, methods (e.g.\@ quantitative, qualitative, design science), rationale. Omit for pure system-design projects.
-
-
 \section{Specification}\label{sec:spec}
 % System design: requirements (what the system must do; optional subsections: functional, non-functional). Research: problem and what is required of a solution.
 
@@ -46,23 +39,148 @@ The main operating assumptions are the following:
     \item The vulnerable container is reachable only through the intended lab path
 \end{itemize}
 
-\section{Datasets}\label{sec:datasets}
-% AI/ML / empirical: data sources, preprocessing, train/validation/test split. Omit if not data-driven.
+It is important to define these assumptions as they restrict scope, we are not trying to provide multi-tenant access with features like payment, global scaling or web based terminals. The core purpose is to demonstrate that controlled generation, deployment and guidance of vulnerable machines.
 
+\subsection{Functional requirements}\label{sec:functional_requirements}
 
-\section{AI and machine learning models}\label{sec:aiml}
-% AI/ML: model choice, training and validation, evaluation methodology. Omit otherwise.
+\begin{longtable}{@{}p{0.10\textwidth} p{0.40\textwidth} p{0.43\textwidth}@{}}
+\caption{Functional requirements and corresponding design responses}
+\label{tab:functional-requirements-long}\\
 
+\toprule
+\textbf{ID} & \textbf{Requirement} & \textbf{Design response} \\
+\midrule
+\endfirsthead
 
-\section{System design}\label{sec:design}
+\toprule
+\textbf{ID} & \textbf{Requirement} & \textbf{Design response} \\
+\midrule
+\endhead
+
+\midrule
+\multicolumn{3}{r}{\emph{Continued on next page}} \\
+\endfoot
+
+\bottomrule
+\endlastfoot
+
+FR1 &
+Users must be able to sign up, log in, log out, and remain authenticated across page refreshes. &
+The application implements email/password authentication, password hashing, HTTP-only session cookies, and a sessions table. \\
+
+FR2 &
+Users must be able to store and update an SSH public key. &
+The system validates public key format and stores the key against the authenticated user. \\
+
+FR3 &
+Users must be able to select a challenge type and difficulty. &
+The dashboard exposes categories and difficulty levels for the user to choose from. \\
+
+FR4 &
+The system must dynamically generate a vulnerability specification. &
+The LLM builds a category-specific prompt, includes the selected difficulty, and requests structured JSON that is validated. \\
+
+FR5 &
+The system must provision a fresh vulnerable environment. &
+The launch API invokes Ansible to create an unprivileged Ubuntu LXC container on Proxmox. \\
+
+FR6 &
+The system must inject user access credentials into the container. &
+The system creates a student user and pushes the user's SSH public key into \texttt{authorized\_keys}. \\
+
+FR7 &
+The system must inject the generated vulnerable content. &
+The injection system installs required packages, pushes generated files into the container, runs setup commands, and restarts services. \\
+
+FR8 &
+The user must receive enough information to access the challenge. &
+The active challenge response includes VMID, hostname, IP address, SSH user, and a ready to copy SSH command. \\
+
+FR9 &
+The user must be able to submit a flag and receive feedback. &
+The flag submission route verifies ownership, status, expiry, and flag value before marking the challenge completed. \\
+
+FR10 &
+The system must prevent indefinite resource use. &
+Challenges have a TTL, application-side expiry checks, and a Proxmox-side cronjob. \\
+
+FR11 &
+The user must be able to end a challenge manually. &
+The challenge panel exposes a destroy action that transitions the challenge to destroyed and invokes container destruction. \\
+
+FR12 &
+The AI tutor must provide challenge-aware guidance. &
+The chat builds a tutor prompt from the stored challenge metadata and solution summary, while blocking direct answer leakage. \\
+
+FR13 &
+Users should be able to review previous work. &
+The history page lists past challenges, statuses, metadata, and saved tutor messages; completed challenges can reveal the solution summary for learning. \\
+
+\end{longtable}
+
+\subsection{Non-functional requirements}\label{sec:non_functional_requirements}
+
+\begin{itemize}
+    \item Containment - The generated vulnerability must remain inside the challenge container. The system uses unprivileged LXC containers, a non-root `student` account, and prompt constraints that prohibit host level vulnerabilities. 
+    \item Ephemerality - The machines spun up should be short lived. The application records an expiry timestamp for each challenge, and the Proxmox host will run a TTL script so that cleaup is not solely relying on the web application being online
+    \item Safety - The LLM can produce malformed content, enter invalid packages, or run commands it should not. The system should use a typed schema, response validation, detailed prompts, fallback models, prompt level constraints, and explanation evaluations to reduce the risk 
+    \item Usability - The student should not need to understand Ansible, Proxmox, LXC containers, or the generation pipeline. The UI should be simple and easy to navigate, with progress updates, a copy-able SSH command, a countdown timer, hints, and tutor support
+    \item Network Access - The application will assume that students can access the container subnet through the lab networking setup. The current implementation will use Tailscale subnet routing, alternatives for production can include Headscale, but the current implementation will not. This is because it is not preparing to wide scale deployment. 
+\end{itemize}
+
+\section{Design}\label{sec:design}
 % System design: architecture, data flow, behaviour (UML, ER, state charts). Use diagrams. Research: use ``Approach and solution'' for your proposed solution(s).
+The architecure of VulnForge involved a fullstack Next.JS application connected to three systems. SQLite as the database of choice to store persistent information, OpenRouter as the LLM provider for generation and tutoring, and Ansible + Proxmox for infrastructure orchestration.
+\begin{figure}
+    \centering
+    \includegraphics[width=1.0\linewidth]{dissertation/Diagrams/High Level Architecture.png}
+    \caption{High Level Architecture}
+    \label{fig:high-level-architecture}
+\end{figure}
 
+The web application is the central part of the application. It validates user input, manages accounts and sessions, stores challenge state, invokes the LLM calls, invokes the container orchestration, presents the challenge and confirms completion. Ansible is used as the infrastructure automation layer, with Proxmox as the hypervisor. This keeps the web application focused on key operations, whilst handing over any infrastructure tasks to Ansible via Ansible Playbooks.
+! TODO - Potentially explain what these are.
+It deliberately avoids exposing infrastructure code to users. Students do not need to interact with Proxmox, Ansible and APIs. They only interact with the generated environment and the chatbot.
+
+\subsection{Data Model}\label{sec:data_model}
+
+
+The challenges table is one of the most imporatnt, connecting the user facing challenge to the generated infrastructure. It stores metadata such as title, description, hint, category, difficulty and attack vector. It also stores server only data (the flag and solution summary). Repository methods deliberately expose a public challenge type that omits these fields unless the challenge is completed, if so, it provides the solution summary as a learning opportunity. 
+
+The challenge is represented in four states:
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{@{}>{\raggedright\arraybackslash}p{2cm}p{7cm}p{5cm}@{}}
+        \toprule
+        \textbf{Status} & \textbf{Meaning} & \textbf{Set by} \\
+        \midrule
+        active & The user can work on the challenge and the container is expected to exist. & Challenge creation. \\
+        \addlinespace
+        completed & The correct flag was submitted before expiry. & Flag submission route. \\
+        \addlinespace
+        destroyed & The user manually ended the challenge. & Challenge delete route. \\
+        \addlinespace
+        expired & The challenge exceeded its TTL. & Active challenge checks, launch cleanup, or expired flag submission handling. \\
+        \bottomrule
+    \end{tabular}
+    \caption{Challenge status definitions}
+    \label{tab:challenge-status}
+\end{table}
+
+There is a partial unique index on \verb|challenges(user_id)| where \verb|completed_as IS NULL| to enforce the idea that a user can only have one active challenge, to prevent a race condition when the same user sends multiple requests to create a challenge.
+
+\subsection{Challenge Lifecycle}\label{sec:lifecycle}
+
+The challenge lifecycle presented to the user is deliberatly simple, however requires careful consideration from the database and infrastructure to prevent mismatched state and inconsistencies. The application checks challenge status before chat requests, flag submissions, and deletion requests. The chat bot is only interactive in active challenges, with the history page allowing the user to view them in read-only mode. Correct flag submissions are marked as \verb|completed|. Manual deletion of containers marks them as \verb|destroyed|, and immediatgely triggers container deletion from the backend asynchronously. Expiry is handled application side, and then also by a cronjob on the host named the TTL Reaper. 
+
+There is a deliberate separation between the logical flow and the infrastructure state. The database may mark a challenge as destroyed before the Ansible destroy playbook has finished running, and the TTL reaper may delete a container before the database is next checked. VulnForge accepts these possibilites as the main requirement is to prevent the user from continuing to interact with stale challenges that should be destroyed, and to prevent indefinite resource usage. 
 
 \section{Implementation}\label{sec:impl}
 
 \subsection{Introduction}
 
-The implementation of this system utilises ephermeral Linux containers, injecting intentional vulnerabilites into them, exposing them to a student through a controlled network path, verifiying the challenge through a flag, and prov
+The implementation of this system utilises ephermeral Linux containers, injecting intentional vulnerabilites into them, exposing them to a student through a controlled network path, verifiying the challenge through a flag, and provisioning containers 
 
 \subsection{Overall System Architecture}
 \subsection{Infrastructure orchestration and ephemeral lab provisioning}
