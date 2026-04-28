@@ -22,7 +22,7 @@
 \section{Specification}\label{sec:spec}
 % System design: requirements (what the system must do; optional subsections: functional, non-functional). Research: problem and what is required of a solution.
 
-VulnForge has to solve three key, connected problems. Firstly, it must provide a usable web interface that allows users to create an account, store an SSH public key, choose a vulnerability category and launch a challenge. Secondly, it must safely orchestrate infrastructure code: create an isolated container, inject the user's SSH key, apply an LLM generated vulnerability specification, and then clean up after usage. Thirdly, it must integrate a generative AI tutor in a constrained way so that the LLM produces useful challenge context, without exposing the answer directly. 
+VulnForge has to solve three key connected problems. Firstly, it must provide a usable web interface that allows users to create an account, store an SSH public key, choose a vulnerability category, and launch a challenge. Secondly, it must safely orchestrate infrastructure code: create an isolated container, inject the user's SSH key, apply an LLM generated vulnerability specification, and then clean up after usage. Thirdly, it must integrate a generative AI tutor in a constrained way so that the LLM produces useful challenge context, without exposing the answer directly. 
 
 \subsection{Scope and assumptions}\label{sec:scope}
 
@@ -132,7 +132,7 @@ The history page lists past challenges, statuses, metadata, and saved tutor mess
 % System design: architecture, data flow, behaviour (UML, ER, state charts). Use diagrams. Research: use ``Approach and solution'' for your proposed solution(s).
 The architecure of VulnForge involved a fullstack Next.JS application connected to three systems. SQLite as the database of choice to store persistent information, OpenRouter as the LLM provider for generation and tutoring, and Ansible + Proxmox for infrastructure orchestration.
 
-\begin{figure}
+\begin{figure}[htbp]
     \centering
     \includegraphics[width=1.0\linewidth]{Diagrams/High Level Architecture.png}
     \caption{High Level Architecture}
