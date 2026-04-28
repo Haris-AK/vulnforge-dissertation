@@ -203,42 +203,13 @@
   }%
 \fi
 
-% When the .aux file is read at \begin{document}, the kernel sets \@writefile to
-% \@gobbletwo, so \@writefile{lof}{...} etc.\ are discarded and .lof/.lot/.loa
-% are never created. Patch so we write those to the list files; then
-% \listoffigures etc.\ can read them and the lists appear.
-\newwrite\tf@lof
-\newwrite\tf@lot
-\newwrite\tf@loa
-\long\def\qdissertation@writelist#1#2{%
-  \@ifundefined{qdissertation@opened@#1}{%
-    \immediate\openout\csname tf@#1\endcsname\jobname.#1
-    \expandafter\gdef\csname qdissertation@opened@#1\endcsname{}%
-  }{}%
-  \immediate\write\csname tf@#1\endcsname{\unexpanded{#2}}%
-}
-\def\qdissertation@write@lof#1{\qdissertation@writelist{lof}{#1}}
-\def\qdissertation@write@lot#1{\qdissertation@writelist{lot}{#1}}
-\def\qdissertation@write@loa#1{\qdissertation@writelist{loa}{#1}}
-% Only lof/lot/loa get written to list files; toc and others are gobbled (kernel behaviour).
-\long\def\qdissertation@writefile#1#2{%
-  \edef\qdissertation@write@arg{#1}%
-  \ifx\qdissertation@write@arg\qdissertation@lofstr
-    \qdissertation@write@lof{#2}%
-  \else
-    \ifx\qdissertation@write@arg\qdissertation@lotstr
-      \qdissertation@write@lot{#2}%
-    \else
-      \ifx\qdissertation@write@arg\qdissertation@loastr
-        \qdissertation@write@loa{#2}%
-      \else
-        \@gobbletwo{#1}{#2}%
-      \fi
-    \fi
-  \fi
-}
-\def\qdissertation@lofstr{lof}\def\qdissertation@lotstr{lot}\def\qdissertation@loastr{loa}
-\patchcmd{\document}{\let\@writefile\@gobbletwo}{\let\@writefile\qdissertation@writefile}{}{}
+% Use LaTeX's standard list-file handling. Earlier versions of this class patched
+% \@writefile while reading the .aux file to regenerate .lof/.lot/.loa files, but
+% that can corrupt auxiliary files and causes LuaLaTeX/latexmk to fail on reruns.
+% The kernel already writes list files from captions during the normal document run.
+% The .aux file is read again during end-document checks; make \@writefile inert
+% for that pass so TOC/LOF/LOT entries are not reprocessed while files are closing.
+\AtEndDocument{\let\@writefile\@gobbletwo}
 
 % Citations: natbib with options matching class (harvard or numeric)
 \ifqdissertation@cite@harvard
@@ -472,20 +443,24 @@
       }%
     \fi \fi
     \ifqdissertation@noobfuscate
-      \IfFontExistsTF{Source Serif Pro}{%
-        \setmainfont{Source Serif Pro}%
-        \setsansfont{Source Sans Pro}[Scale=MatchLowercase]%
-        \IfFontExistsTF{Source Code Pro}{%
-          \setmonofont{Source Code Pro}[Scale=MatchLowercase]%
-        }{%
-          \setmonofont{TeX Gyre Cursor}[Scale=MatchLowercase]%
-        }%
-      }{%
-        \PackageWarningNoLine{qdissertation}{Source Pro not found; using TeX Gyre Termes/Heros/Cursor}%
-        \setmainfont{TeX Gyre Termes}%
-        \setsansfont{TeX Gyre Heros}[Scale=MatchLowercase]%
-        \setmonofont{TeX Gyre Cursor}[Scale=MatchLowercase]%
-      }%
+   \IfFontExistsTF{Times New Roman}{%
+     \setmainfont{Times New Roman}[Ligatures=TeX]%
+     \IfFontExistsTF{Arial}{%
+       \setsansfont{Arial}[Scale=MatchLowercase,Ligatures=TeX]%
+     }{%
+       \setsansfont{TeX Gyre Heros}[Scale=MatchLowercase,Ligatures=TeX]%
+     }%
+     \IfFontExistsTF{Courier New}{%
+       \setmonofont{Courier New}[Scale=MatchLowercase,Ligatures=TeX]%
+     }{%
+       \setmonofont{TeX Gyre Cursor}[Scale=MatchLowercase,Ligatures=TeX]%
+     }%
+   }{%
+     \PackageWarningNoLine{qdissertation}{Times New Roman not found; using TeX Gyre Termes/Heros/Cursor}%
+     \setmainfont{TeX Gyre Termes}[Ligatures=TeX]%
+     \setsansfont{TeX Gyre Heros}[Scale=MatchLowercase,Ligatures=TeX]%
+     \setmonofont{TeX Gyre Cursor}[Scale=MatchLowercase,Ligatures=TeX]%
+   }%
     \else
       \ifluatex \else
         \IfFontExistsTF{Source Serif Pro}{%
@@ -559,7 +534,7 @@
     \fi
   \fi
   \RequirePackage{unicode-math}%
-  \setmathfont{Latin Modern Math}[Scale=MatchLowercase]%
+  \setmathfont{TeX Gyre Termes Math}[Scale=MatchLowercase]%
 \fi
 
 % ------------------------------------------------------------------------------
@@ -665,9 +640,9 @@
 \setlength{\qdissertation@newthoughtskip}{1.0\baselineskip plus 0.5ex minus 0.2ex}
 \@ifundefined{textls}{%
 \PackageWarning{qdissertation}{textls (microtype) not available; small caps without letterspacing}%
-\newcommand{\newthought}[1]{\par\vspace{\qdissertation@newthoughtskip}\noindent\textsc{#1}}%
+\newcommand{\newthought}[1]{\par\vspace{\qdissertation@newthoughtskip}\noindent#1}%
 }{%
-\newcommand{\newthought}[1]{\par\vspace{\qdissertation@newthoughtskip}\noindent\textls[50]{\scshape #1}}%
+\newcommand{\newthought}[1]{\par\vspace{\qdissertation@newthoughtskip}\noindent#1}%
 }%
 
 % ------------------------------------------------------------------------------
@@ -764,9 +739,9 @@
   \fancyhf{}%
   \ifqdissertation@twoside
     \fancyhead[LE,RO]{\thepage}%
-    \fancyhead[LO,RE]{\textls[50]{\scshape\leftmark}}%
+    \fancyhead[LO,RE]{\leftmark}%
   \else
-    \fancyhead[L]{\textls[50]{\scshape\leftmark}}%
+    \fancyhead[L]{\leftmark}%
     \fancyhead[R]{\thepage}%
   \fi
   \renewcommand{\headrulewidth}{\qdissertation@headruleheight}%
@@ -778,9 +753,9 @@
   \fancyhf{}%
   \ifqdissertation@twoside
     \fancyhead[LE,RO]{\thepage}%
-    \fancyhead[LO,RE]{\textls[50]{\scshape\leftmark}}%
+    \fancyhead[LO,RE]{\leftmark}%
   \else
-    \fancyhead[L]{\textls[50]{\scshape\leftmark}}%
+    \fancyhead[L]{\leftmark}%
     \fancyhead[R]{\thepage}%
   \fi
   \renewcommand{\headrule}{%
@@ -803,21 +778,21 @@
   \fancyhf{}%
   \ifqdissertation@twoside
     \fancyhead[LE,RO]{\thepage}%
-    \fancyhead[LO,RE]{\textls[50]{\scshape\leftmark}}%
+    \fancyhead[LO,RE]{\leftmark}%
   \else
-    \fancyhead[L]{\textls[50]{\scshape\leftmark}}%
+    \fancyhead[L]{\leftmark}%
     \fancyhead[R]{\thepage}%
   \fi
   \renewcommand{\headrule}{%
     \begingroup
       \normalfont
       \setlength{\dimen0}{0pt}%
-      \settowidth{\dimen0}{\Large\textls[50]{\scshape\ifqdissertation@italic\itshape\else\bfseries\fi\ \MakeUppercase{\@chapapp}~\qdissertation@chapterlabel}}%
+      \settowidth{\dimen0}{\Large\ifqdissertation@italic\itshape\else\bfseries\fi \MakeUppercase{\@chapapp}~\qdissertation@chapterlabel}%
       \vskip2pt
       \hrule\@height\qdissertation@headruleheight\@width\headwidth
       \vskip-\qdissertation@headruleheight
       \hbox to\headwidth{\hfill\vrule\@height\qdissertation@headruleheight@thick\@width\dimen0}%
-      \hbox to\headwidth{\hfill\Large\textls[50]{\scshape\ifqdissertation@italic\itshape\else\bfseries\fi \MakeUppercase{\@chapapp}~\qdissertation@chapterlabel}}%
+      \hbox to\headwidth{\hfill\Large\ifqdissertation@italic\itshape\else\bfseries\fi \MakeUppercase{\@chapapp}~\qdissertation@chapterlabel}%
       \vskip-0.3\baselineskip
     \endgroup
   }%
