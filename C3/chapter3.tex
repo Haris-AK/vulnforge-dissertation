@@ -134,7 +134,7 @@ The architecure of VulnForge involved a fullstack Next.JS application connected 
 
 \begin{figure}
     \centering
-    \includegraphics[width=1.0\linewidth]{dissertation/Diagrams/High Level Architecture.png}
+    \includegraphics[width=1.0\linewidth]{Diagrams/High Level Architecture.png}
     \caption{High Level Architecture}
     \label{fig:high-level-architecture}
 \end{figure}
@@ -175,29 +175,24 @@ There is a partial unique index on \verb|challenges(user_id)| where \verb|comple
 
 The challenge lifecycle presented to the user is deliberatly simple, however requires careful consideration from the database and infrastructure to prevent mismatched state and inconsistencies. The application checks challenge status before chat requests, flag submissions, and deletion requests. The chat bot is only interactive in active challenges, with the history page allowing the user to view them in read-only mode. Correct flag submissions are marked as \verb|completed|. Manual deletion of containers marks them as \verb|destroyed|, and immediatgely triggers container deletion from the backend asynchronously. Expiry is handled application side, and then also by a cronjob on the host named the TTL Reaper. 
 
-There is a deliberate separation between the logical flow and the infrastructure state. The database may mark a challenge as destroyed before the Ansible destroy playbook has finished running, and the TTL reaper may delete a container before the database is next checked. VulnForge accepts these possibilites as the main requirement is to prevent the user from continuing to interact with stale challenges that should be destroyed, and to prevent indefinite resource usage. 
+There is a deliberate separation between the logical flow and the infrastructure state. The database may mark a challenge as destroyed before the Ansible destroy playbook has finished running, and the TTL reaper may delete a container before the database is next checked. VulnForge accepts these possibilities as the main requirement is to prevent the user from continuing to interact with stale challenges that should be destroyed, and to prevent indefinite resource usage. 
 
 \subsection{Launch Pipeline}\label{sec:launch_pipeline}
 The challenge launch pipeline is the most complex aspect of the project. It gets exposed to the user via the browser as a server sent event stream so that the UI can show progress as it is occuring. This is because the operations can take a while, and we don't want the user to think something has frozen, so this shows them intermediate progress. 
 
-The pipeline has two verification levels. Regular launches from the browser run a health verification mode. This executes health checks and flag protection checks. This can catch commonf failures such as a web server not starting, a generated file missing, or the flag being directly readable by the student. Full exploit verification is the other mode. This is controlled by an environment variable named \verb|CHALLENGE_FULL_VERIFY_BEFORE_LAUNCH|. When this mode is enabled, the application will first deploy a disposable container, named the 'verifier'. This container will have the generated vulnerability specfication injected into it, run the exploit checks provided by the LLM, and then if it verifies it works, destory the temporary container and deploy a fresh user facing container. This is only used when the environment variable is enabled as it is quite time intensive, and we do not want the user to have the delay. It also avoids giving the user a container that has already been mutated by the exploit checks, as if we ran this on the users container, certain changes such as permission ones would have to be reverted, causing increased complexity. 
+The pipeline has two verification levels. Regular launches from the browser run a health verification mode. This executes health checks and flag protection checks. This can catch commonf failures such as a web server not starting, a generated file missing, or the flag being directly readable by the student. Full exploit verification is the other mode. This is controlled by an environment variable named \verb|CHALLENGE_FULL_VERIFY_BEFORE_LAUNCH|. When this mode is enabled, the application will first deploy a disposable container, named the 'verifier'. This container will have the generated vulnerability specfication injected into it, run the exploit checks provided by the LLM, and then if it verifies it works, destroy the temporary container and deploy a fresh user facing container. This is only used when the environment variable is enabled as it is quite time intensive, and we do not want the user to have the delay. It also avoids giving the user a container that has already been mutated by the exploit checks, as if we ran this on the users container, certain changes such as permission ones would have to be reverted, causing increased complexity. 
+
+
+\subsection{Vulnerability generation design}\label{sec:vuln_gen_design}
+
+The LLM does not directly control the infrastructure, instead it produces a structured \verb|VulnerabilitySpec| object that is treated as a data source. The schema includes the following:
+
+The design uses various safeguards to ensure the LLM generates a vulnerability to VulnForge's specification.
+\begin{enumerate}
+    \item Server side flag generation: The platform generates the flag as \verb|FLAG{...}| using random bytes. This occurs before we call to the LLM, and the LLM is then instructed to embed this exact flag string somewhere exploitable. This avoids relying on the model to generate a unique flag, and allows us to store it in logs and context, without having to wait for the LLM call to extract it. Furthremore, any aspects we can compute server side are useful as it means that we do not need excessive LLM calls that can result in further delay. 
+\end{enumerate}
 
 \section{Implementation}\label{sec:impl}
-
-\subsection{Introduction}
-
-The implementation of this system utilises ephermeral Linux containers, injecting intentional vulnerabilites into them, exposing them to a student through a controlled network path, verifiying the challenge through a flag, and provisioning containers 
-
-\subsection{Overall System Architecture}
-\subsection{Infrastructure orchestration and ephemeral lab provisioning}
-\subsubsection{Proxmox and container model}
-\subsubsection{Ansible as the orchestration layer}
-\subsubsection{Network access and learner connectivity}
-\subsubsection{Automatic cleanup and the TTL reaper}
-\subsection{LLM driven vulnerability generation and injection}
-\subsection{Web application}
-
-
 
 
 \section{Summary}\label{sec:summary}

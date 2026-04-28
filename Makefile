@@ -1,37 +1,32 @@
 # Makefile for qdissertation template (uses latexmk)
-# Main dissertation file: main.tex. Example initial plan: plan.tex.
+# Main dissertation file: main.tex.
 # Run: make help for targets.
 #
-# LaTeX engine: set ENGINE to lua (default), pdf, or xe.
-#   make              # lualatex
-#   make ENGINE=pdf
-#   make ENGINE=xe
+# This project builds with LuaLaTeX via latexmk.
+#   make              # build main.pdf with lualatex
 #
 # SPDX-FileCopyrightText: 2026 Frank Langbein <frank@langbein.org>
 # SPDX-License-Identifier: LPPL-1.3c
 
 MAIN = main
-PLAN = plan
-ENGINE ?= lua
 # Seed used for obfuscated fonts. Override with `make hacker-font SEED=...`.
 # If not provided, we pick a timestamp seed so all generated fonts share one permutation.
 SEED ?= $(shell date +%s)
 
 # ------------------------------------------------------------------------------
-# Default: build dissertation and example plan (first target).
+# Default: build dissertation (first target).
 # Run "make help" for all targets.
 # ------------------------------------------------------------------------------
 .PHONY: all
-all: $(MAIN).pdf $(PLAN).pdf
+all: main
 
 # ------------------------------------------------------------------------------
 # Help
 # ------------------------------------------------------------------------------
 help:
 	@echo "qdissertation template Makefile targets:"
-	@echo "  make [all]     Build $(MAIN).pdf and $(PLAN).pdf (default)."
-	@echo "  make main      Build $(MAIN).pdf only."
-	@echo "  make plan      Build $(PLAN).pdf only (initial plan example)."
+	@echo "  make [all]     Build $(MAIN).pdf with LuaLaTeX."
+	@echo "  make main      Build $(MAIN).pdf with LuaLaTeX."
 	@echo "  make help      Show this help."
 	@echo "  make clean    Remove build artifacts (keep PDF)."
 	@echo "  make distclean  clean + remove $(MAIN).pdf"
@@ -39,26 +34,15 @@ help:
 	@echo "  make wordcount  Per-file and total word count (captions shown separately)."
 	@echo "  make check    Run quality checks (REUSE lint, optional dissertation-specific)."
 	@echo ""
-	@echo "Engine: make ENGINE=lua (default) | ENGINE=pdf | ENGINE=xe"
+	@echo "Engine: LuaLaTeX only"
 
-# latexmk engine flag and compiler command for nonstopmode + file-line-error
-ifeq ($(ENGINE),xe)
-  LATEXMK_ENGINE = -xelatex
-  LATEXMK_CMD = -xelatex="xelatex -interaction=nonstopmode -file-line-error %O %S"
-else
-  ifeq ($(ENGINE),lua)
-    LATEXMK_ENGINE = -lualatex
-    LATEXMK_CMD = -lualatex="lualatex -interaction=nonstopmode -file-line-error %O %S"
-  else
-    LATEXMK_ENGINE = -pdf
-    LATEXMK_CMD = -pdflatex="pdflatex -interaction=nonstopmode -file-line-error %O %S"
-  endif
-endif
-
+# latexmk command for LuaLaTeX with nonstopmode + file-line-error
 LATEXMK = latexmk
+LATEXMK_ENGINE = -lualatex
+LATEXMK_CMD = -lualatex="lualatex -interaction=nonstopmode -file-line-error %O %S"
 LATEXMK_OPTS ?= -f
 
-.PHONY: clean distclean wordcount check help hacker-font main plan
+.PHONY: clean distclean wordcount check help hacker-font main
 
 # ------------------------------------------------------------------------------
 # Obfuscation: generate permuted fonts + permutation table
@@ -122,20 +106,11 @@ hacker-font:
 	$(call obfuscate_font,$(HACKER_SRC_BOLD),hacker-obfuscated-Bold.otf)
 	@echo "Done. Use class option 'obfuscate' with font=sans, serif, or hacker (ENGINE=lua). See README."
 
-$(MAIN).pdf: $(MAIN).tex qdissertation.cls bibliography.bib acronyms.tex \
+main: $(MAIN).tex qdissertation.cls bibliography.bib acronyms.tex \
 	C*/chapter*.tex A*/appendix*.tex
 	$(LATEXMK) $(LATEXMK_OPTS) $(LATEXMK_ENGINE) $(LATEXMK_CMD) $(MAIN)
 	-makeglossaries $(MAIN)
-	$(LATEXMK) $(LATEXMK_OPTS) -g $(LATEXMK_ENGINE) $(LATEXMK_CMD) $(MAIN)
-
-$(PLAN).pdf: $(PLAN).tex qproposal.cls bibliography.bib acronyms.tex
-	$(LATEXMK) $(LATEXMK_OPTS) $(LATEXMK_ENGINE) $(LATEXMK_CMD) $(PLAN)
-	-makeglossaries $(PLAN)
-	$(LATEXMK) $(LATEXMK_OPTS) -g $(LATEXMK_ENGINE) $(LATEXMK_CMD) $(PLAN)
-
-main: $(MAIN).pdf
-
-plan: $(PLAN).pdf
+	$(LATEXMK) $(LATEXMK_OPTS) $(LATEXMK_ENGINE) $(LATEXMK_CMD) $(MAIN)
 
 clean:
 	$(LATEXMK) -c $(MAIN)
@@ -145,7 +120,7 @@ clean:
 	rm -f *.fls *.fdb_latexmk *.synctex.gz
 
 distclean: clean
-	rm -f $(MAIN).pdf $(PLAN).pdf
+	rm -f $(MAIN).pdf
 	rm -rf fonts
 
 # Word count: includes \input files (-inc). Full count = text + headers + captions.

@@ -133,7 +133,7 @@
 % and is compatible with your institution's requirements (e.g. no encryption, be
 % careful with obfuscation).
 % =============================================================================
-\documentclass[sans,oneside,numeric,raggedright,fullwidth]{qdissertation}
+\documentclass[serif,oneside,numeric,raggedright,fullwidth]{qdissertation}
 
 % -----------------------------------------------------------------------------
 % Optional: use a different acronyms file
@@ -184,8 +184,27 @@
 \usepackage{afterpage}       % \afterpage{\clearpage} to clear after current page
 
 % Font
-% Times New Roman
-\usepackage{mathptmx}
+% Use Times New Roman with LuaLaTeX when it is installed. If it is not available
+% on the build machine, fall back to TeX Gyre Termes, a Times-compatible TeX font.
+% Do not load legacy pdfTeX font packages such as mathptmx here; they break
+% Unicode/OpenType math output under LuaLaTeX.
+% \IfFontExistsTF{Times New Roman}{%
+%   \setmainfont{Times New Roman}[Ligatures=TeX]%
+% }{%
+%   \PackageWarningNoLine{main}{Times New Roman not found; using TeX Gyre Termes instead}%
+%   \setmainfont{TeX Gyre Termes}[Ligatures=TeX]%
+% }%
+% \IfFontExistsTF{Arial}{%
+%   \setsansfont{Arial}[Scale=MatchLowercase,Ligatures=TeX]%
+% }{%
+%   \setsansfont{TeX Gyre Heros}[Scale=MatchLowercase,Ligatures=TeX]%
+% }%
+% \IfFontExistsTF{Courier New}{%
+%   \setmonofont{Courier New}[Scale=MatchLowercase,Ligatures=TeX]%
+% }{%
+%   \setmonofont{Source Code Pro}[Scale=MatchLowercase,Ligatures=TeX]%
+% }%
+% \setmathfont{texgyretermes-math.otf}[Scale=MatchLowercase]
 
 \usepackage{titlesec}
 \titleformat{\subsubsection}[runin]{\normalfont\bfseries}{\thesubsubsection}{1em}{}
@@ -198,8 +217,10 @@
 % Degree
 \degree{BSc Computer Science}
 % \degree{MSc Advanced Computer Science}
+
+
 \university{Cardiff University}
-\date{May 2026}
+\date{07/05/2026}
 
 % License and copyright following SPDX. (optional; comment out if not needed).
 % Needs qdissertation-licenses.tex for license text in the License chapter.
@@ -216,11 +237,11 @@
 % List of Acronyms (if acronyms.tex defines \newacronym).
 % Add \dedication{...} and \makededication separately if desired.
 \maketitle{%
-  % Abstract: typically 200--300 words. State problem, methods, and main results.
-  This is the abstract: a short, self-contained summary of the dissertation.
-  It should state the problem, methods, and main results so that a reader
-  can understand the scope without reading the full document. Replace with
-  your own abstract.
+	% Abstract: typically 200--300 words. State problem, methods, and main results.
+	This is the abstract: a short, self-contained summary of the dissertation.
+	It should state the problem, methods, and main results so that a reader
+	can understand the scope without reading the full document. Replace with
+	your own abstract.
 }
 
 % -----------------------------------------------------------------------------
@@ -229,7 +250,7 @@
 
 % Replace with your dedication (one or two lines); optional.
 \dedication{%
-  To my family.%
+	To my family.%
 }
 
 \chapter{Acknowledgements}
@@ -304,6 +325,5 @@ Code produced for this dissertation is available from [repository/DOI or ``avail
 % Bibliography (always last): \bib{bibfile} uses natbib (numeric or harvard per class option)
 % and inserts the License chapter if \license was set.
 \bib{bibliography}
-\cite{}
 
 \end{document}
