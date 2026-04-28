@@ -1,0 +1,44 @@
+%%{init: {
+  "theme": "neutral",
+  "flowchart": {
+    "htmlLabels": true,
+    "curve": "basis",
+    "nodeSpacing": 24,
+    "rankSpacing": 34
+  },
+  "themeVariables": {
+    "fontSize": "13px",
+    "fontFamily": "Times New Roman, serif"
+  }
+}}%%
+flowchart TB
+    A["Validation block<br/>in challenge spec"]
+    B["Health checks"]
+    C["Flag protection<br/>checks"]
+    D["Exploit checks"]
+    E["Verification runner"]
+    F{"Execution context"}
+    G["container_root"]
+    H["container_student"]
+    I["external_http"]
+    J["Command result"]
+    K["Check exit code,<br/>stdout rules, flag recovery"]
+    L{"Mode"}
+    M["Pass if health and<br/>protection pass"]
+    N["Pass if health,<br/>protection, exploit pass"]
+    O{"Result"}
+    P["Keep challenge"]
+    Q["Destroy container<br/>and report error"]
+
+    A --> B --> E
+    A --> C --> E
+    A --> D --> E
+    E --> F
+    F --> G --> J
+    F --> H --> J
+    F --> I --> J
+    J --> K --> L
+    L -- Health mode --> M --> O
+    L -- Full mode --> N --> O
+    O -- Pass --> P
+    O -- Fail --> Q

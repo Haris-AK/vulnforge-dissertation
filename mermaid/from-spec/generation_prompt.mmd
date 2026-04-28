@@ -1,0 +1,48 @@
+%%{init: {
+  "flowchart": {
+    "htmlLabels": true,
+    "nodeSpacing": 32,
+    "rankSpacing": 46,
+    "curve": "basis"
+  },
+  "theme": "base",
+  "themeVariables": {
+    "fontFamily": "Times New Roman, serif",
+    "fontSize": "13px",
+    "primaryColor": "#ffffff",
+    "primaryBorderColor": "#333333",
+    "lineColor": "#333333",
+    "clusterBkg": "#f8f8f8",
+    "clusterBorder": "#999999"
+  }
+}}%%
+flowchart TD
+    subgraph INPUT["Inputs to buildVulnerabilityPrompt()"]
+        CAT[categoryId]
+        DIFF[difficulty]
+        FLAG_IN[flag string]
+        HIST[history: ChallengeHistoryEntry array]
+    end
+
+    subgraph DIVERSITY["Diversity Mechanisms"]
+        VSEL["① Variant Selection\nRandom pick from 8–10 sub-types\ne.g. Nginx alias path traversal\nApache mod_status exposure"]
+        TSEL["② Theme Selection\nRandom pick from 18 fictional orgs\ne.g. Thornfield Veterinary Clinic\nHarwick Freight Tracker"]
+        EXCL["③ History Exclusion List\nFilter history by categoryId\nCap at 10 entries\nAppend: Do NOT generate:\n— Title A (solution: ...)\n— Title B (solution: ...)"]
+    end
+
+    subgraph ASSEMBLY["Prompt Assembly"]
+        PROMPT_BUILD["Assemble user prompt\nCategory-specific template\nMandatory variant directive\nApplication theme\nExclusion list\nFlag literal\nDifficulty constraints"]
+        META["Return BuiltPrompt\n{ prompt, metadata:\n  { selectedVariant, selectedTheme } }"]
+    end
+
+    CAT --> VSEL
+    CAT --> TSEL
+    HIST --> EXCL
+    DIFF --> PROMPT_BUILD
+    FLAG_IN --> PROMPT_BUILD
+
+    VSEL --> PROMPT_BUILD
+    TSEL --> PROMPT_BUILD
+    EXCL --> PROMPT_BUILD
+
+    PROMPT_BUILD --> META

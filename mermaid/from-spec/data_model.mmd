@@ -1,0 +1,56 @@
+%%{init: {
+  "theme": "neutral",
+  "er": {
+    "layoutDirection": "TB"
+  },
+  "themeVariables": {
+    "fontFamily": "Times New Roman, serif",
+    "fontSize": "13px"
+  }
+}}%%
+erDiagram
+    users {
+        integer id          PK
+        text    username    "UNIQUE NOT NULL"
+        text    password_hash "NOT NULL"
+        text    public_key  "nullable — stored SSH pub key"
+        integer created_at
+    }
+
+    sessions {
+        integer id          PK
+        integer user_id     FK
+        text    token       "UNIQUE NOT NULL"
+        integer expires_at
+        integer created_at
+    }
+
+    challenges {
+        integer id              PK
+        integer user_id         FK
+        text    title
+        text    description
+        text    category
+        text    difficulty
+        text    hint
+        text    solution_summary "private — used by tutor only"
+        text    flag            "NOT NULL"
+        integer vmid
+        text    ip
+        text    status          "active | completed | expired | destroyed"
+        integer expires_at
+        integer completed_at    "NULL while active"
+        integer created_at
+    }
+
+    messages {
+        integer id           PK
+        integer challenge_id FK
+        text    role         "user | assistant"
+        text    content
+        integer created_at
+    }
+
+    users      ||--o{ sessions   : "has"
+    users      ||--o{ challenges : "owns"
+    challenges ||--o{ messages   : "has tutor history"

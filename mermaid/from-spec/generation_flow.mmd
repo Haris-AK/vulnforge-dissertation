@@ -1,0 +1,67 @@
+%%{init: {
+  "flowchart": {
+    "htmlLabels": true,
+    "nodeSpacing": 32,
+    "rankSpacing": 46,
+    "curve": "basis"
+  },
+  "theme": "base",
+  "themeVariables": {
+    "fontFamily": "Times New Roman, serif",
+    "fontSize": "13px",
+    "primaryColor": "#ffffff",
+    "primaryBorderColor": "#333333",
+    "lineColor": "#333333",
+    "clusterBkg": "#f8f8f8",
+    "clusterBorder": "#999999"
+  }
+}}%%
+flowchart TD
+    START([generateVulnerability called\ncategoryId · difficulty · history])
+
+    subgraph SETUP["Setup"]
+        FLAG[Generate flag server-side\ncrypto.randomBytes 12 hex]
+        PROMPT[Build category prompt\n① Select random variant\n② Select random theme\n③ Append exclusion list from history]
+        SCHEMA[Derive JSON Schema from Zod VulnerabilitySpecSchema]
+    end
+
+    subgraph RETRY_LOOP["Retry Loop — max 3 attempts"]
+        ATTEMPT{Attempt within\nmaxAttempts?}
+        MODEL_CHAIN[withOpenRouterModelFallback\nprimary → fallback-1 → fallback-2]
+
+        subgraph API_CALL["API Request"]
+            CALL[POST OpenRouter /v1/messages\nresponse_format: json_schema\ntemperature 1.0]
+            FINISH{finishReason\n= stop?}
+        end
+
+        subgraph VALIDATION["Validation"]
+            PARSE[JSON.parse response text]
+            ZOD{Zod safeParse}
+            POLICY[validateGeneratedSpecPolicy\ncategory · difficulty · flag presence\npath safety · command patterns]
+            POLICY_OK{policy.valid?}
+        end
+
+        RETRY_ERR[Log attempt failure\nincrement attempt counter]
+    end
+
+    START --> FLAG
+    FLAG --> PROMPT
+    PROMPT --> SCHEMA
+    SCHEMA --> ATTEMPT
+
+    ATTEMPT -->|Yes| MODEL_CHAIN
+    ATTEMPT -->|No| FATAL_ERR([Throw — generation failed])
+
+    MODEL_CHAIN --> CALL
+    CALL --> FINISH
+    FINISH -->|No| RETRY_ERR
+    FINISH -->|Yes| PARSE
+
+    PARSE --> ZOD
+    ZOD -->|fail| RETRY_ERR
+    ZOD -->|pass| POLICY
+    POLICY --> POLICY_OK
+    POLICY_OK -->|No| RETRY_ERR
+    POLICY_OK -->|Yes| SUCCESS([Return VulnerabilitySpec + flag])
+
+    RETRY_ERR --> ATTEMPT

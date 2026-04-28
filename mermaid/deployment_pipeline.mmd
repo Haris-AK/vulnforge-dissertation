@@ -1,0 +1,41 @@
+%%{init: {
+  "theme": "neutral",
+  "flowchart": {
+    "htmlLabels": true,
+    "curve": "basis",
+    "nodeSpacing": 24,
+    "rankSpacing": 34
+  },
+  "themeVariables": {
+    "fontSize": "13px",
+    "fontFamily": "Times New Roman, serif"
+  }
+}}%%
+flowchart TB
+    A["User selects<br/>category, difficulty"]
+    B["Launch API<br/>authenticates user"]
+    C{"Active challenge<br/>already exists?"}
+    D["Generate flag<br/>and prompt"]
+    E["Call OpenRouter<br/>chat completions"]
+    F["Parse JSON<br/>and validate spec"]
+    G{"Spec valid?"}
+    H["Retry with new<br/>variant, theme, flag"]
+    I["Deploy LXC<br/>with Ansible"]
+    J{"Container ready?"}
+    K["Inject files and<br/>restart services"]
+    L["Run health and<br/>flag protection checks"]
+    M{"Checks pass?"}
+    N["Insert active<br/>challenge row"]
+    O["SSE complete:<br/>show connection details"]
+    X["Destroy partial<br/>container"]
+    Z["Return SSE error"]
+
+    A --> B --> C
+    C -- Yes --> Z
+    C -- No --> D --> E --> F --> G
+    G -- No --> H --> E
+    G -- Yes --> I --> J
+    J -- No --> X --> Z
+    J -- Yes --> K --> L --> M
+    M -- No --> X
+    M -- Yes --> N --> O

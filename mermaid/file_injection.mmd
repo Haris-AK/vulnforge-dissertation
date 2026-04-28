@@ -1,0 +1,29 @@
+%%{init: {
+  "theme": "neutral",
+  "flowchart": {
+    "htmlLabels": true,
+    "curve": "basis",
+    "nodeSpacing": 24,
+    "rankSpacing": 34
+  },
+  "themeVariables": {
+    "fontSize": "13px",
+    "fontFamily": "Times New Roman, serif"
+  }
+}}%%
+flowchart TB
+    A["Generated file spec:<br/>path, content, mode, owner"]
+    B["Create host<br/>staging directory"]
+    C["Ansible copy writes<br/>content as file data"]
+    D["pct push sends file<br/>into LXC container"]
+    E["pct exec chown sets<br/>owner and group"]
+    F["Remove host<br/>staging files"]
+    G["Restart affected<br/>services"]
+    H["Injection complete"]
+
+    I["Rejected alternative:<br/>pct exec plus shell echo"]
+    J["Fragile quoting for<br/>quotes, dollars, newlines"]
+
+    A --> B --> C --> D --> E --> F --> G --> H
+    I --> J
+    J -. avoided .-> C

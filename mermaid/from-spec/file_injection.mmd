@@ -1,0 +1,50 @@
+%%{init: {
+  "flowchart": {
+    "htmlLabels": true,
+    "nodeSpacing": 36,
+    "rankSpacing": 50,
+    "curve": "basis"
+  },
+  "theme": "base",
+  "themeVariables": {
+    "fontFamily": "Times New Roman, serif",
+    "fontSize": "13px",
+    "primaryColor": "#ffffff",
+    "primaryBorderColor": "#333333",
+    "lineColor": "#333333",
+    "clusterBkg": "#f8f8f8",
+    "clusterBorder": "#999999"
+  }
+}}%%
+flowchart LR
+    subgraph SPEC["VulnerabilitySpec"]
+        FILES["files[]\npath · content · mode · owner · group"]
+    end
+
+    subgraph HOST["Proxmox Host — Ansible"]
+        COPY["Ansible copy module\nwrites file-0 … file-N\nas opaque bytes"]
+        STAGE["Temp staging dir\n/tmp/vuln-inject-XXXX/"]
+        COPY --> STAGE
+    end
+
+    subgraph CONTAINER["LXC Container"]
+        PUSH["pct push vmid host-path container-path\n--perms mode\nLXC filesystem API — no shell"]
+        CHOWN["pct exec vmid --\nchown owner:group path"]
+        FILES_IN["Files at correct paths\nwith correct permissions"]
+        PUSH --> CHOWN --> FILES_IN
+    end
+
+    subgraph CLEANUP["Cleanup"]
+        RM["Staging dir removed\nregardless of outcome"]
+    end
+
+    subgraph REJECTED_APPROACH["Rejected Approach"]
+        REJECTED["pct exec -- bash -c echo content\nFails on quotes, dollars, newlines"]
+    end
+
+    FILES -->|loop idx| COPY
+    STAGE -->|pct push per file| PUSH
+    CONTAINER --> RM
+
+    style REJECTED_APPROACH fill:#ffebee,stroke:#f44336
+    style REJECTED fill:#ffebee,stroke:#f44336

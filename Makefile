@@ -110,7 +110,6 @@ main: $(MAIN).tex qdissertation.cls bibliography.bib acronyms.tex \
 	C*/chapter*.tex A*/appendix*.tex
 	$(LATEXMK) $(LATEXMK_OPTS) $(LATEXMK_ENGINE) $(LATEXMK_CMD) $(MAIN)
 	-makeglossaries $(MAIN)
-	$(LATEXMK) $(LATEXMK_OPTS) $(LATEXMK_ENGINE) $(LATEXMK_CMD) $(MAIN)
 
 clean:
 	$(LATEXMK) -c $(MAIN)

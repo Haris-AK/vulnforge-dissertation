@@ -1,0 +1,34 @@
+%%{init: {
+  "theme": "neutral",
+  "flowchart": {
+    "htmlLabels": true,
+    "curve": "basis",
+    "nodeSpacing": 24,
+    "rankSpacing": 34
+  },
+  "themeVariables": {
+    "fontSize": "13px",
+    "fontFamily": "Times New Roman, serif"
+  }
+}}%%
+flowchart TB
+    A["Requested category"]
+    B["Category prompt module"]
+    C["Random vulnerability<br/>variant"]
+    D["Random application<br/>theme"]
+    E["Recent user history<br/>for this category"]
+    F["Exclusion list:<br/>titles, solution summaries"]
+    G["Final prompt"]
+    H["LLM generation"]
+    I["Candidate spec"]
+    J{"Policy checks pass?"}
+    K["Accept spec"]
+    L["Regenerate with new<br/>flag, variant, theme"]
+
+    A --> B
+    B --> C --> G
+    B --> D --> G
+    A --> E --> F --> G
+    G --> H --> I --> J
+    J -- Yes --> K
+    J -- No --> L --> C

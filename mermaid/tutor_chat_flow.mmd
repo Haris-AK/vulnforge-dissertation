@@ -1,0 +1,30 @@
+%%{init: {
+  "theme": "neutral",
+  "flowchart": {
+    "htmlLabels": true,
+    "curve": "basis",
+    "nodeSpacing": 24,
+    "rankSpacing": 34
+  },
+  "themeVariables": {
+    "fontSize": "13px",
+    "fontFamily": "Times New Roman, serif"
+  }
+}}%%
+flowchart TB
+    A["User asks for help"]
+    B["Chat API authenticates<br/>session"]
+    C["Load active challenge<br/>and message history"]
+    D["Build tutor prompt<br/>with private context"]
+    E["Call OpenRouter<br/>chat completions"]
+    F["Leakage filter"]
+    G{"Flag or verbatim<br/>solution leaked?"}
+    H["Replace with safe<br/>guidance response"]
+    I["Use assistant response"]
+    J["Send SSE chunks<br/>to browser"]
+    K["Persist user and<br/>assistant messages"]
+
+    A --> B --> C --> D --> E --> F --> G
+    G -- Yes --> H --> J
+    G -- No --> I --> J
+    J --> K

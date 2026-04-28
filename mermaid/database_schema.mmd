@@ -1,0 +1,55 @@
+%%{init: {
+  "theme": "neutral",
+  "er": {
+    "layoutDirection": "TB"
+  },
+  "themeVariables": {
+    "fontSize": "13px",
+    "fontFamily": "Times New Roman, serif"
+  }
+}}%%
+erDiagram
+    direction TB
+
+    users {
+        text id PK
+        text email "unique"
+        text password_hash
+        text ssh_public_key
+        text created_at
+    }
+
+    sessions {
+        text id PK "session token"
+        text user_id FK
+        text expires_at
+    }
+
+    challenges {
+        text id PK
+        text user_id FK
+        text vmid
+        text ip
+        text hostname
+        text category
+        text difficulty
+        text title
+        text status "active/completed/expired/destroyed"
+        text flag "private"
+        text solution_summary "private"
+        text created_at
+        text expires_at
+        text completed_at
+    }
+
+    messages {
+        text id PK
+        text challenge_id FK
+        text role
+        text content
+        text created_at
+    }
+
+    users ||--o{ sessions : has
+    users ||--o{ challenges : owns
+    challenges ||--o{ messages : stores

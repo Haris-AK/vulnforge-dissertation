@@ -1,0 +1,33 @@
+%%{init: {
+  "theme": "neutral",
+  "flowchart": {
+    "htmlLabels": true,
+    "curve": "basis",
+    "nodeSpacing": 24,
+    "rankSpacing": 34
+  },
+  "themeVariables": {
+    "fontSize": "13px",
+    "fontFamily": "Times New Roman, serif"
+  }
+}}%%
+flowchart TB
+    A["Evaluation config:<br/>category, difficulty,<br/>repetitions, mode"]
+    B["scripts/evaluate.ts"]
+    C{"Mode"}
+    D["Generate spec only"]
+    E["Generate and deploy"]
+    F["Generate, deploy,<br/>and inject"]
+    G["Generate, deploy,<br/>inject, and verify"]
+    H["Structured result"]
+    I["Full verification"]
+    J["Record timing,<br/>stage outcome, hashes"]
+    K["Write JSON output"]
+    L["Analyse in<br/>evaluation chapter"]
+
+    A --> B --> C
+    C -- static --> D --> H
+    C -- deploy --> E --> H
+    C -- inject --> F --> H
+    C -- full --> G --> I --> H
+    H --> J --> K --> L

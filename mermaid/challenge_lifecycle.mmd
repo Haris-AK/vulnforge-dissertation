@@ -1,0 +1,43 @@
+%%{init: {
+  "theme": "neutral",
+  "themeVariables": {
+    "fontSize": "13px",
+    "fontFamily": "Times New Roman, serif"
+  }
+}}%%
+stateDiagram-v2
+    [*] --> Requested
+
+    state "Launch pipeline" as Pipeline {
+        Requested --> Generating
+        Generating --> Deploying: spec valid
+        Deploying --> Injecting: LXC ready
+        Injecting --> Verifying: files applied
+        Verifying --> LaunchPassed: checks pass
+
+        Generating --> LaunchFailed: generation error
+        Deploying --> LaunchFailed: deploy error
+        Injecting --> LaunchFailed: inject error
+        Verifying --> LaunchFailed: verification error
+    }
+
+    LaunchPassed --> Active: persist active
+    LaunchFailed --> Destroyed: cleanup
+
+    Active --> Completed: correct flag
+    Active --> Expired: TTL reached
+    Active --> Destroyed: cleanup request
+    Completed --> Destroyed: later cleanup
+    Expired --> Destroyed: reaper cleanup
+    Destroyed --> [*]
+
+    note right of Pipeline
+        Pipeline states are transient
+        SSE progress stages.
+    end note
+
+    note right of Active
+        Active, completed, expired,
+        and destroyed are stored
+        challenge statuses.
+    end note

@@ -1,0 +1,54 @@
+%%{init: {
+  "theme": "neutral",
+  "themeVariables": {
+    "fontFamily": "Times New Roman, serif",
+    "fontSize": "13px"
+  }
+}}%%
+stateDiagram-v2
+    [*] --> Pipeline : POST /api/challenges/launch\nDB constraint check passes
+
+    state "Launch Pipeline — SSE stream" as Pipeline {
+        state "Generation" as Generating {
+            [*] --> CallingLLM
+            CallingLLM --> Validating : OpenRouter response
+            Validating --> [*] : Zod + policy pass
+        }
+        state "Deployment" as Deploying {
+            [*] --> CreatingContainer
+            CreatingContainer --> ConfiguringUser : pct create + start
+            ConfiguringUser --> [*] : student user + SSH key ready
+        }
+        state "Injection" as Injecting {
+            [*] --> StagingFiles
+            StagingFiles --> PushingFiles : host staging dir written
+            PushingFiles --> RunningSetup : pct push per file
+            RunningSetup --> [*] : setup_commands + service restart
+        }
+        state "Verification" as Verifying {
+            [*] --> HealthChecks
+            HealthChecks --> FlagProtectionChecks
+            FlagProtectionChecks --> [*]
+        }
+
+        Generating --> Deploying
+        Deploying  --> Injecting
+        Injecting  --> Verifying
+    }
+
+    Pipeline --> active     : Verification passed\nINSERT challenge row — expires_at = now + 1h
+    Pipeline --> [*]        : Any stage failed\nContainer destroyed — SSE error event
+
+    state active {
+        [*] --> running
+        running --> running      : User connects via SSH\nAttempts exploits
+        running --> flagSubmitted : POST /api/challenges/submit-flag\ncorrect flag string
+    }
+
+    active    --> completed : Flag submitted correctly
+    active    --> expired   : expires_at elapsed\nTTL reaper or app-layer check
+    active    --> destroyed : User clicks Destroy\nPOST /api/challenges/destroy
+
+    completed --> [*]
+    expired   --> [*]
+    destroyed --> [*]

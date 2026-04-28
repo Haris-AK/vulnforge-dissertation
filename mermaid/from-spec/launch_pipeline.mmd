@@ -1,0 +1,76 @@
+%%{init: {
+  "theme": "neutral",
+  "themeVariables": {
+    "fontFamily": "Times New Roman, serif",
+    "fontSize": "13px"
+  }
+}}%%
+sequenceDiagram
+    box Browser
+        actor User
+        participant Client as React Client
+    end
+    box Next.js Application
+        participant MW as Middleware
+        participant API as /api/challenges/launch
+        participant DB as SQLite
+    end
+    box Generation
+        participant Gen as openrouter.ts
+        participant OR as OpenRouter
+    end
+    box Infrastructure
+        participant Ans as ansible-runner.ts
+        participant Ver as verification-runner.ts
+        participant PX as Proxmox / Ansible
+    end
+
+    User->>Client: Click "Launch Challenge"
+    Client->>MW: POST /api/challenges/launch
+    MW->>MW: Check session_token cookie
+    MW->>API: Forward (authenticated)
+
+    API->>DB: Check for existing active challenge
+    DB-->>API: None found
+
+    API-->>Client: SSE stream opened
+    API-->>Client: event: progress — "Generating vulnerability"
+
+    API->>Gen: generateVulnerability(category, difficulty, history)
+    Gen->>OR: POST /v1/messages (json_schema)
+    OR-->>Gen: VulnerabilitySpec JSON
+    Gen->>Gen: Zod parse + policy validation
+    Gen-->>API: spec + flag
+
+    API-->>Client: event: progress — "Deploying container"
+    API->>Ans: deployContainer(vmid)
+    Ans->>PX: ansible-playbook deploy.yml
+    PX->>PX: pct create + pct start\ncreate student user — install SSH key
+    PX-->>Ans: success
+    Ans-->>API: vmid + ip
+
+    API-->>Client: event: progress — "Injecting vulnerability"
+    API->>Ans: injectVulnerability(vmid, spec, flag)
+    Ans->>PX: ansible-playbook inject-vulnerability.yml
+    PX->>PX: apt-get install packages\npct push files (staging strategy)\nset permissions + ownership\nrun setup_commands — restart services
+    PX-->>Ans: success
+    Ans-->>API: ok
+
+    API-->>Client: event: progress — "Verifying challenge"
+    API->>Ver: verifyInjectedChallenge(vmid, ip, flag, spec, health)
+    Ver->>PX: ansible-playbook verify-vulnerability.yml\nhealth + flag-protection checks
+    PX-->>Ver: JSON results
+    Ver->>Ver: Evaluate exit codes + stdout assertions
+    Ver-->>API: VerificationResult
+
+    alt Verification failed
+        API->>Ans: destroyContainer(vmid)
+        Ans->>PX: ansible-playbook destroy.yml
+        API-->>Client: event: error — verification failure detail
+    else Verification passed
+        API->>DB: INSERT challenge row\nstatus=active — expires_at=now+1h
+        DB-->>API: challenge record
+        API-->>Client: event: complete — challenge object\ntitle · description · hint · SSH command
+    end
+
+    Client->>Client: Render challenge details

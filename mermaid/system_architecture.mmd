@@ -1,0 +1,89 @@
+%%{init: {
+  "flowchart": {
+    "htmlLabels": true,
+    "nodeSpacing": 32,
+    "rankSpacing": 46,
+    "curve": "basis"
+  },
+  "theme": "base",
+  "themeVariables": {
+    "fontFamily": "Times New Roman, serif",
+    "fontSize": "13px",
+    "primaryColor": "#ffffff",
+    "primaryBorderColor": "#333333",
+    "lineColor": "#333333",
+    "clusterBkg": "#f8f8f8",
+    "clusterBorder": "#999999"
+  }
+}}%%
+
+flowchart TB
+    U["Student"]
+
+    subgraph B[" "]
+        direction LR
+        B_TITLE["<b>Browser</b>"]
+        UI["Dashboard"]
+        CHAT["Tutor UI"]
+        SSH["SSH client"]
+    end
+
+    subgraph A[" "]
+        direction TB
+        A_TITLE["<b>Next.js application</b>"]
+        AUTH["Auth and API routes"]
+        GEN["Vulnerability<br/>generation"]
+        VER["Verification<br/>runner"]
+        DB[("SQLite<br/>Drizzle ORM")]
+    end
+
+    subgraph L[" "]
+        direction TB
+        L_TITLE["<b>LLM provider layer</b>"]
+        FB["Model fallback"]
+        OR["OpenRouter<br/>chat completions"]
+    end
+
+    subgraph P[" "]
+        direction TB
+        P_TITLE["<b>Proxmox host</b>"]
+        ANS["Ansible<br/>playbooks"]
+        TTL["TTL reaper"]
+        LXC["Ephemeral<br/>LXC container"]
+    end
+
+    subgraph C[" "]
+        direction LR
+        C_TITLE["<b>Challenge container</b>"]
+        STU["student user"]
+        FILES["Generated files<br/>and services"]
+        FLAG["Hidden flag"]
+    end
+
+    U --> UI
+    U --> CHAT
+    U --> SSH
+
+    UI --> AUTH
+    CHAT --> AUTH
+
+    AUTH --> GEN
+    AUTH --> VER
+    AUTH --> DB
+    AUTH --> ANS
+
+    GEN --> FB
+    FB --> OR
+
+    VER --> ANS
+    ANS --> LXC
+    TTL --> LXC
+
+    LXC --> STU
+    LXC --> FILES
+    LXC --> FLAG
+
+    SSH --> STU
+
+    classDef title fill:transparent,stroke:transparent,color:#000,font-weight:bold;
+    class B_TITLE,A_TITLE,L_TITLE,P_TITLE,C_TITLE title;

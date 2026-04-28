@@ -1,0 +1,39 @@
+%%{init: {
+  "theme": "neutral",
+  "flowchart": {
+    "htmlLabels": true,
+    "curve": "basis",
+    "nodeSpacing": 24,
+    "rankSpacing": 34
+  },
+  "themeVariables": {
+    "fontSize": "13px",
+    "fontFamily": "Times New Roman, serif"
+  }
+}}%%
+flowchart TB
+    A["Launch request"]
+    B["Read previous<br/>challenge history"]
+    C["Sample variant<br/>and theme"]
+    D["Generate<br/>server-side flag"]
+    E["Build prompt<br/>and JSON schema"]
+    F["OpenRouter<br/>chat completions"]
+    G{"Provider call<br/>succeeded?"}
+    H{"Fallback model<br/>available?"}
+    I["Parse JSON"]
+    J["Zod validation"]
+    K["Policy validation"]
+    L{"Accepted?"}
+    M{"Attempts left?"}
+    N["Return valid spec<br/>and flag"]
+    X["Generation error"]
+
+    A --> B --> C --> D --> E --> F --> G
+    G -- Retryable error --> H
+    H -- Yes --> F
+    H -- No --> X
+    G -- Yes --> I --> J --> K --> L
+    L -- Yes --> N
+    L -- No --> M
+    M -- Yes --> C
+    M -- No --> X

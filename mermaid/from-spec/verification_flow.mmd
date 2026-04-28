@@ -1,0 +1,80 @@
+%%{init: {
+  "flowchart": {
+    "htmlLabels": true,
+    "nodeSpacing": 32,
+    "rankSpacing": 46,
+    "curve": "basis"
+  },
+  "theme": "base",
+  "themeVariables": {
+    "fontFamily": "Times New Roman, serif",
+    "fontSize": "13px",
+    "primaryColor": "#ffffff",
+    "primaryBorderColor": "#333333",
+    "lineColor": "#333333",
+    "clusterBkg": "#f8f8f8",
+    "clusterBorder": "#999999"
+  }
+}}%%
+flowchart TD
+    START([verifyInjectedChallenge\nvmid · ip · flag · spec · mode])
+
+    subgraph SELECTION["Check Selection"]
+        SELECT{mode?}
+        HC_FP["health_checks\nflag_protection_checks"]
+        HC_FP_EX["health_checks\nflag_protection_checks\nexploit_checks"]
+        SELECT -->|health| HC_FP
+        SELECT -->|full| HC_FP_EX
+    end
+
+    subgraph PREPARATION["Preparation"]
+        SUBST["Substitute placeholders\nTARGET_IP · TARGET_URL · FLAG · VMID"]
+        WRITE["Write checks JSON\n.tmp/verify-vmid-UUID.json"]
+        PLAYBOOK["ansible-playbook verify-vulnerability.yml"]
+    end
+
+    subgraph DISPATCH["Per-command Dispatch"]
+        CTX{context?}
+        ROOT["pct exec vmid --\nbash -lc command\n(container root)"]
+        STUDENT["pct exec vmid --\nrunuser -u student --\nbash -lc command"]
+        HTTP["bash -lc command\ncurl from Proxmox host\n(external HTTP)"]
+        CTX -->|container_root| ROOT
+        CTX -->|container_student| STUDENT
+        CTX -->|external_http| HTTP
+    end
+
+    subgraph EVALUATE["Evaluate — evaluateCommand() per result"]
+        EC["Check exit code = expect_exit_code"]
+        SC["Check stdout contains required strings"]
+        SN["Check stdout excludes forbidden strings"]
+        MF["Check flag in output if must_recover_flag"]
+    end
+
+    subgraph GROUP["Group Results — groupPassed()"]
+        HP[healthPassed]
+        FP[flagProtectionPassed]
+        EP["exploitPassed\n(full mode only)"]
+    end
+
+    START --> SELECT
+    HC_FP --> SUBST
+    HC_FP_EX --> SUBST
+    SUBST --> WRITE
+    WRITE --> PLAYBOOK
+    PLAYBOOK --> CTX
+    ROOT --> EC
+    STUDENT --> EC
+    HTTP --> EC
+    EC --> SC --> SN --> MF
+    MF --> HP
+    MF --> FP
+    MF --> EP
+    HP --> RESULT
+    FP --> RESULT
+    EP --> RESULT
+
+    RESULT{success?}
+    RESULT -->|Yes| OK([VerificationResult: success true])
+    RESULT -->|No| FAIL([VerificationResult: success false\nper-command failureReason])
+
+    WRITE -.->|cleanup in finally| DEL["unlink checks JSON"]
