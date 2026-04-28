@@ -131,6 +131,7 @@ The history page lists past challenges, statuses, metadata, and saved tutor mess
 \section{Design}\label{sec:design}
 % System design: architecture, data flow, behaviour (UML, ER, state charts). Use diagrams. Research: use ``Approach and solution'' for your proposed solution(s).
 The architecure of VulnForge involved a fullstack Next.JS application connected to three systems. SQLite as the database of choice to store persistent information, OpenRouter as the LLM provider for generation and tutoring, and Ansible + Proxmox for infrastructure orchestration.
+
 \begin{figure}
     \centering
     \includegraphics[width=1.0\linewidth]{dissertation/Diagrams/High Level Architecture.png}
@@ -175,6 +176,11 @@ There is a partial unique index on \verb|challenges(user_id)| where \verb|comple
 The challenge lifecycle presented to the user is deliberatly simple, however requires careful consideration from the database and infrastructure to prevent mismatched state and inconsistencies. The application checks challenge status before chat requests, flag submissions, and deletion requests. The chat bot is only interactive in active challenges, with the history page allowing the user to view them in read-only mode. Correct flag submissions are marked as \verb|completed|. Manual deletion of containers marks them as \verb|destroyed|, and immediatgely triggers container deletion from the backend asynchronously. Expiry is handled application side, and then also by a cronjob on the host named the TTL Reaper. 
 
 There is a deliberate separation between the logical flow and the infrastructure state. The database may mark a challenge as destroyed before the Ansible destroy playbook has finished running, and the TTL reaper may delete a container before the database is next checked. VulnForge accepts these possibilites as the main requirement is to prevent the user from continuing to interact with stale challenges that should be destroyed, and to prevent indefinite resource usage. 
+
+\subsection{Launch Pipeline}\label{sec:launch_pipeline}
+The challenge launch pipeline is the most complex aspect of the project. It gets exposed to the user via the browser as a server sent event stream so that the UI can show progress as it is occuring. This is because the operations can take a while, and we don't want the user to think something has frozen, so this shows them intermediate progress. 
+
+The pipeline has two verification levels. Regular launches from the browser run a health verification mode. This executes health checks and flag protection checks. This can catch commonf failures such as a web server not starting, a generated file missing, or the flag being directly readable by the student. Full exploit verification is the other mode. This is controlled by an environment variable named \verb|CHALLENGE_FULL_VERIFY_BEFORE_LAUNCH|. When this mode is enabled, the application will first deploy a disposable container, named the 'verifier'. This container will have the generated vulnerability specfication injected into it, run the exploit checks provided by the LLM, and then if it verifies it works, destory the temporary container and deploy a fresh user facing container. This is only used when the environment variable is enabled as it is quite time intensive, and we do not want the user to have the delay. It also avoids giving the user a container that has already been mutated by the exploit checks, as if we ran this on the users container, certain changes such as permission ones would have to be reverted, causing increased complexity. 
 
 \section{Implementation}\label{sec:impl}
 
