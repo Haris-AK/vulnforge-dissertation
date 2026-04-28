@@ -22,7 +22,7 @@
 \section{Specification}\label{sec:spec}
 % System design: requirements (what the system must do; optional subsections: functional, non-functional). Research: problem and what is required of a solution.
 
-VulnForge has to solve three key, connected problems. Firstly, it must provide a usable web interface that allows users to create an account, store an SSH public key, choose a vulnerability category and launch a challenge. Secondly, it must safely orchestrate infrastructure code: create an isolated container, inject the user's SSH key, apply an LLM generated vulnerability specification, and then clean up after usage. Thirdly, it must integrate a generative AI tutor in a constrained way so that the LLM produces useful challenge context, without exposing the answer directly. 
+VulnForge has to solve three key connected problems. Firstly, it must provide a usable web interface that allows users to create an account, store an SSH public key, choose a vulnerability category, and launch a challenge. Secondly, it must safely orchestrate infrastructure code: create an isolated container, inject the user's SSH key, apply an LLM generated vulnerability specification, and then clean up after usage. Thirdly, it must integrate a generative AI tutor in a constrained way so that the LLM produces useful challenge context, without exposing the answer directly. 
 
 \subsection{Scope and assumptions}\label{sec:scope}
 
