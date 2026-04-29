@@ -1,8 +1,8 @@
 %%{init: {
   "flowchart": {
     "htmlLabels": true,
-    "nodeSpacing": 36,
-    "rankSpacing": 50,
+    "nodeSpacing": 30,
+    "rankSpacing": 55,
     "curve": "basis"
   },
   "theme": "base",
@@ -26,16 +26,16 @@ graph TB
         MW[Middleware — Route Protection]
 
         subgraph Routes["API Routes"]
-            API_AUTH["/api/auth/*\nLogin · Signup · Session"]
-            API_CHALLENGES["/api/challenges/*\nLaunch · Submit · History"]
-            API_CHAT["/api/chat\nAI Tutor"]
+            API_AUTH["/api/auth/* — Login · Signup · Session"]
+            API_CHALLENGES["/api/challenges/* — Launch · Submit · History"]
+            API_CHAT["/api/chat — AI Tutor"]
         end
 
         subgraph Lib["Core Library"]
-            GEN[openrouter.ts\nVulnerability Generator]
-            ANS[ansible-runner.ts\nOrchestration Client]
-            VER[verification-runner.ts\nVerification Engine]
-            AUTH[auth.ts\nSession Management]
+            GEN["openrouter.ts — Vulnerability Generator"]
+            ANS["ansible-runner.ts — Orchestration Client"]
+            VER["verification-runner.ts — Verification Engine"]
+            AUTH["auth.ts — Session Management"]
         end
 
         DB[(SQLite — Drizzle ORM)]
@@ -44,51 +44,43 @@ graph TB
     subgraph LLM["LLM Layer — OpenRouter"]
         OR[OpenRouter Gateway]
         subgraph Models["Model Chain"]
-            GM[Gemini 3.1 Pro\nprimary]
-            GM2[Gemini 2.5 Pro\nfallback 1]
-            KI[Kimi K2\nfallback 2]
+            GM[Gemini 3.1 Pro — primary]
+            GM2[Gemini 2.5 Pro — fallback 1]
+            KI[Kimi K2 — fallback 2]
         end
     end
 
     subgraph Proxmox["Proxmox VE Host"]
         subgraph Automation["Ansible Automation"]
-            ANS_PB[Playbooks\ndeploy · inject · verify · destroy]
+            ANS_PB["Playbooks — deploy · inject · verify · destroy"]
             PCT[pct — LXC CLI]
         end
-        REAPER[TTL Reaper — cron / shell]
+        REAPER[TTL Reaper — cron]
 
         subgraph LXC["LXC Containers"]
-            C1[Container VMID=N\ntag: vulnforge — student user]
-            C2[Container VMID=M — ...]
+            C1["Container N — tag: vulnforge — student user"]
+            C2[Container M — ...]
         end
     end
 
     UI -->|HTTP| MW
-    MW --> API_AUTH
-    MW --> API_CHALLENGES
-    MW --> API_CHAT
+    MW --> API_AUTH & API_CHALLENGES & API_CHAT
     SSE -.->|EventSource| API_CHALLENGES
 
-    API_CHALLENGES --> GEN
-    API_CHALLENGES --> ANS
-    API_CHALLENGES --> VER
+    API_CHALLENGES --> GEN & ANS & VER
     API_AUTH --> AUTH
     API_CHAT --> GEN
 
-    GEN -->|json_schema + system prompt| OR
+    GEN -->|json_schema| OR
     OR --> GM
     OR -.-> GM2
     OR -.-> KI
 
-    ANS -->|execFile / SSH| ANS_PB
-    VER -->|execFile / SSH| ANS_PB
-    ANS_PB --> PCT
-    PCT --> C1
-    PCT --> C2
+    ANS & VER -->|execFile / SSH| ANS_PB
+    ANS_PB --> PCT --> C1 & C2
+    REAPER -.->|pct stop| C1 & C2
 
-    REAPER -->|pct shutdown / stop| C1
-    REAPER -->|pct shutdown / stop| C2
+    AUTH & API_CHALLENGES & API_CHAT --> DB
 
-    AUTH --> DB
-    API_CHALLENGES --> DB
-    API_CHAT --> DB
+    %% Force LLM above Proxmox
+    KI ~~~ ANS_PB

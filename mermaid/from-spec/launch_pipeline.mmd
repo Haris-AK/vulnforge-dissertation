@@ -2,7 +2,7 @@
   "theme": "neutral",
   "themeVariables": {
     "fontFamily": "Times New Roman, serif",
-    "fontSize": "13px"
+    "fontSize": "12px"
   }
 }}%%
 sequenceDiagram
@@ -10,7 +10,7 @@ sequenceDiagram
         actor User
         participant Client as React Client
     end
-    box Next.js Application
+    box Next.js
         participant MW as Middleware
         participant API as /api/challenges/launch
         participant DB as SQLite
@@ -27,50 +27,44 @@ sequenceDiagram
 
     User->>Client: Click "Launch Challenge"
     Client->>MW: POST /api/challenges/launch
-    MW->>MW: Check session_token cookie
-    MW->>API: Forward (authenticated)
-
-    API->>DB: Check for existing active challenge
+    MW->>API: Forward (session validated)
+    API->>DB: Check for active challenge
     DB-->>API: None found
-
     API-->>Client: SSE stream opened
-    API-->>Client: event: progress — "Generating vulnerability"
 
+    API-->>Client: progress: Generating vulnerability
     API->>Gen: generateVulnerability(category, difficulty, history)
     Gen->>OR: POST /v1/messages (json_schema)
     OR-->>Gen: VulnerabilitySpec JSON
     Gen->>Gen: Zod parse + policy validation
     Gen-->>API: spec + flag
 
-    API-->>Client: event: progress — "Deploying container"
+    API-->>Client: progress: Deploying container
     API->>Ans: deployContainer(vmid)
-    Ans->>PX: ansible-playbook deploy.yml
-    PX->>PX: pct create + pct start\ncreate student user — install SSH key
-    PX-->>Ans: success
+    Ans->>PX: deploy.yml — pct create + start
+    PX-->>Ans: vmid + ip
     Ans-->>API: vmid + ip
 
-    API-->>Client: event: progress — "Injecting vulnerability"
+    API-->>Client: progress: Injecting vulnerability
     API->>Ans: injectVulnerability(vmid, spec, flag)
-    Ans->>PX: ansible-playbook inject-vulnerability.yml
-    PX->>PX: apt-get install packages\npct push files (staging strategy)\nset permissions + ownership\nrun setup_commands — restart services
-    PX-->>Ans: success
+    Ans->>PX: inject-vulnerability.yml
+    PX->>PX: Install packages, push files,\nset permissions, run setup, restart services
+    PX-->>Ans: ok
     Ans-->>API: ok
 
-    API-->>Client: event: progress — "Verifying challenge"
-    API->>Ver: verifyInjectedChallenge(vmid, ip, flag, spec, health)
-    Ver->>PX: ansible-playbook verify-vulnerability.yml\nhealth + flag-protection checks
+    API-->>Client: progress: Verifying challenge
+    API->>Ver: verifyInjectedChallenge(vmid, ip, flag, spec)
+    Ver->>PX: verify-vulnerability.yml
     PX-->>Ver: JSON results
-    Ver->>Ver: Evaluate exit codes + stdout assertions
     Ver-->>API: VerificationResult
 
     alt Verification failed
         API->>Ans: destroyContainer(vmid)
-        Ans->>PX: ansible-playbook destroy.yml
-        API-->>Client: event: error — verification failure detail
+        API-->>Client: error: verification failure detail
     else Verification passed
-        API->>DB: INSERT challenge row\nstatus=active — expires_at=now+1h
+        API->>DB: INSERT challenge (status=active, expires_at=now+1h)
         DB-->>API: challenge record
-        API-->>Client: event: complete — challenge object\ntitle · description · hint · SSH command
+        API-->>Client: complete: title · hint · SSH command
     end
 
     Client->>Client: Render challenge details

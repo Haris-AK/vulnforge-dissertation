@@ -1,8 +1,8 @@
 %%{init: {
   "flowchart": {
     "htmlLabels": true,
-    "nodeSpacing": 36,
-    "rankSpacing": 50,
+    "nodeSpacing": 30,
+    "rankSpacing": 55,
     "curve": "basis"
   },
   "theme": "base",
@@ -16,35 +16,31 @@
     "clusterBorder": "#999999"
   }
 }}%%
-flowchart LR
+flowchart TD
     subgraph SPEC["VulnerabilitySpec"]
-        FILES["files[]\npath · content · mode · owner · group"]
+        FILES["files[] — path · content · mode · owner · group"]
     end
 
     subgraph HOST["Proxmox Host — Ansible"]
-        COPY["Ansible copy module\nwrites file-0 … file-N\nas opaque bytes"]
-        STAGE["Temp staging dir\n/tmp/vuln-inject-XXXX/"]
+        COPY["Ansible copy module — writes each file as opaque bytes"]
+        STAGE["Temp staging dir — /tmp/vuln-inject-XXXX/"]
         COPY --> STAGE
     end
 
     subgraph CONTAINER["LXC Container"]
-        PUSH["pct push vmid host-path container-path\n--perms mode\nLXC filesystem API — no shell"]
-        CHOWN["pct exec vmid --\nchown owner:group path"]
-        FILES_IN["Files at correct paths\nwith correct permissions"]
+        PUSH["pct push vmid host-path container-path — LXC filesystem API"]
+        CHOWN["pct exec — chown owner:group path"]
+        FILES_IN["Files in place with correct paths and permissions"]
         PUSH --> CHOWN --> FILES_IN
     end
 
     subgraph CLEANUP["Cleanup"]
-        RM["Staging dir removed\nregardless of outcome"]
+        RM["Staging dir removed regardless of outcome"]
     end
 
-    subgraph REJECTED_APPROACH["Rejected Approach"]
-        REJECTED["pct exec -- bash -c echo content\nFails on quotes, dollars, newlines"]
-    end
-
-    FILES -->|loop idx| COPY
+    FILES -->|"loop over files[]"| COPY
     STAGE -->|pct push per file| PUSH
-    CONTAINER --> RM
+    FILES_IN --> RM
 
-    style REJECTED_APPROACH fill:#ffebee,stroke:#f44336
-    style REJECTED fill:#ffebee,stroke:#f44336
+    REJECTED["Rejected: pct exec -- bash -c 'echo content' — fails on quotes · dollars · newlines"]
+    style REJECTED fill:#ffebee,stroke:#c62828,color:#b71c1c

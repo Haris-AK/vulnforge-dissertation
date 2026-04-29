@@ -1,8 +1,8 @@
 %%{init: {
   "flowchart": {
     "htmlLabels": true,
-    "nodeSpacing": 32,
-    "rankSpacing": 46,
+    "nodeSpacing": 28,
+    "rankSpacing": 55,
     "curve": "basis"
   },
   "theme": "base",
@@ -17,51 +17,40 @@
   }
 }}%%
 flowchart TD
-    START([generateVulnerability called\ncategoryId · difficulty · history])
+    START(["generateVulnerability — categoryId · difficulty · history"])
 
     subgraph SETUP["Setup"]
-        FLAG[Generate flag server-side\ncrypto.randomBytes 12 hex]
-        PROMPT[Build category prompt\n① Select random variant\n② Select random theme\n③ Append exclusion list from history]
-        SCHEMA[Derive JSON Schema from Zod VulnerabilitySpecSchema]
+        FLAG["Generate flag — crypto.randomBytes 12 hex"]
+        PROMPT["Build category prompt — variant · theme · exclusion list"]
+        SCHEMA["Derive JSON Schema from Zod VulnerabilitySpecSchema"]
     end
 
     subgraph RETRY_LOOP["Retry Loop — max 3 attempts"]
-        ATTEMPT{Attempt within\nmaxAttempts?}
-        MODEL_CHAIN[withOpenRouterModelFallback\nprimary → fallback-1 → fallback-2]
+        ATTEMPT{Within maxAttempts?}
+        MODEL_CHAIN["Model fallback chain — primary → fallback-1 → fallback-2"]
 
         subgraph API_CALL["API Request"]
-            CALL[POST OpenRouter /v1/messages\nresponse_format: json_schema\ntemperature 1.0]
-            FINISH{finishReason\n= stop?}
+            CALL["POST /v1/messages — response_format: json_schema · temp 1.0"]
+            FINISH{finishReason = stop?}
         end
 
         subgraph VALIDATION["Validation"]
-            PARSE[JSON.parse response text]
+            PARSE[JSON.parse response]
             ZOD{Zod safeParse}
-            POLICY[validateGeneratedSpecPolicy\ncategory · difficulty · flag presence\npath safety · command patterns]
+            POLICY["validateGeneratedSpecPolicy — category · paths · commands · flag"]
             POLICY_OK{policy.valid?}
         end
 
-        RETRY_ERR[Log attempt failure\nincrement attempt counter]
+        RETRY_ERR["Log failure — increment attempt"]
     end
 
-    START --> FLAG
-    FLAG --> PROMPT
-    PROMPT --> SCHEMA
-    SCHEMA --> ATTEMPT
-
-    ATTEMPT -->|Yes| MODEL_CHAIN
-    ATTEMPT -->|No| FATAL_ERR([Throw — generation failed])
-
-    MODEL_CHAIN --> CALL
-    CALL --> FINISH
+    START --> FLAG --> PROMPT --> SCHEMA --> ATTEMPT
+    ATTEMPT -->|Yes| MODEL_CHAIN --> CALL --> FINISH
+    ATTEMPT -->|No| FATAL_ERR(["Throw — generation failed"])
     FINISH -->|No| RETRY_ERR
-    FINISH -->|Yes| PARSE
-
-    PARSE --> ZOD
+    FINISH -->|Yes| PARSE --> ZOD
     ZOD -->|fail| RETRY_ERR
-    ZOD -->|pass| POLICY
-    POLICY --> POLICY_OK
+    ZOD -->|pass| POLICY --> POLICY_OK
     POLICY_OK -->|No| RETRY_ERR
-    POLICY_OK -->|Yes| SUCCESS([Return VulnerabilitySpec + flag])
-
+    POLICY_OK -->|Yes| SUCCESS(["Return VulnerabilitySpec + flag"])
     RETRY_ERR --> ATTEMPT

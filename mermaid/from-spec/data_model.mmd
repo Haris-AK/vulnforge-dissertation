@@ -10,36 +10,35 @@
 }}%%
 erDiagram
     users {
-        integer id          PK
-        text    username    "UNIQUE NOT NULL"
+        integer id            PK
+        text    username      "UNIQUE NOT NULL"
         text    password_hash "NOT NULL"
-        text    public_key  "nullable — stored SSH pub key"
+        text    public_key    "SSH public key"
         integer created_at
     }
 
     sessions {
-        integer id          PK
-        integer user_id     FK
-        text    token       "UNIQUE NOT NULL"
+        integer id         PK
+        integer user_id    FK
+        text    token      "UNIQUE NOT NULL"
         integer expires_at
         integer created_at
     }
 
     challenges {
-        integer id              PK
-        integer user_id         FK
+        integer id               PK
+        integer user_id          FK
         text    title
-        text    description
         text    category
         text    difficulty
         text    hint
-        text    solution_summary "private — used by tutor only"
-        text    flag            "NOT NULL"
+        text    flag             "NOT NULL"
+        text    solution_summary "private"
         integer vmid
         text    ip
-        text    status          "active | completed | expired | destroyed"
+        text    status           "active|completed|expired|destroyed"
         integer expires_at
-        integer completed_at    "NULL while active"
+        integer completed_at
         integer created_at
     }
 

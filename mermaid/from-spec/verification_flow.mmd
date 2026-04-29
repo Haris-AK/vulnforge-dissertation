@@ -1,8 +1,8 @@
 %%{init: {
   "flowchart": {
     "htmlLabels": true,
-    "nodeSpacing": 32,
-    "rankSpacing": 46,
+    "nodeSpacing": 28,
+    "rankSpacing": 55,
     "curve": "basis"
   },
   "theme": "base",
@@ -17,64 +17,49 @@
   }
 }}%%
 flowchart TD
-    START([verifyInjectedChallenge\nvmid · ip · flag · spec · mode])
+    START(["verifyInjectedChallenge — vmid · ip · flag · spec · mode"])
 
     subgraph SELECTION["Check Selection"]
         SELECT{mode?}
-        HC_FP["health_checks\nflag_protection_checks"]
-        HC_FP_EX["health_checks\nflag_protection_checks\nexploit_checks"]
+        HC_FP["health + flag_protection checks"]
+        HC_FP_EX["health + flag_protection + exploit checks"]
         SELECT -->|health| HC_FP
         SELECT -->|full| HC_FP_EX
     end
 
     subgraph PREPARATION["Preparation"]
-        SUBST["Substitute placeholders\nTARGET_IP · TARGET_URL · FLAG · VMID"]
-        WRITE["Write checks JSON\n.tmp/verify-vmid-UUID.json"]
+        SUBST["Substitute placeholders — TARGET_IP · TARGET_URL · FLAG · VMID"]
+        WRITE["Write checks to .tmp/verify-vmid-UUID.json"]
         PLAYBOOK["ansible-playbook verify-vulnerability.yml"]
     end
 
     subgraph DISPATCH["Per-command Dispatch"]
         CTX{context?}
-        ROOT["pct exec vmid --\nbash -lc command\n(container root)"]
-        STUDENT["pct exec vmid --\nrunuser -u student --\nbash -lc command"]
-        HTTP["bash -lc command\ncurl from Proxmox host\n(external HTTP)"]
+        ROOT["pct exec — bash as root"]
+        STUDENT["pct exec — bash as student"]
+        HTTP["curl from Proxmox host"]
         CTX -->|container_root| ROOT
         CTX -->|container_student| STUDENT
         CTX -->|external_http| HTTP
     end
 
-    subgraph EVALUATE["Evaluate — evaluateCommand() per result"]
-        EC["Check exit code = expect_exit_code"]
-        SC["Check stdout contains required strings"]
-        SN["Check stdout excludes forbidden strings"]
-        MF["Check flag in output if must_recover_flag"]
+    subgraph EVALUATE["Evaluate per result"]
+        CHECKS["Check exit code · stdout contains · stdout excludes · flag recovered"]
     end
 
-    subgraph GROUP["Group Results — groupPassed()"]
+    subgraph GROUP["Group Results"]
         HP[healthPassed]
         FP[flagProtectionPassed]
-        EP["exploitPassed\n(full mode only)"]
+        EP["exploitPassed — full mode only"]
     end
 
     START --> SELECT
-    HC_FP --> SUBST
-    HC_FP_EX --> SUBST
-    SUBST --> WRITE
-    WRITE --> PLAYBOOK
-    PLAYBOOK --> CTX
-    ROOT --> EC
-    STUDENT --> EC
-    HTTP --> EC
-    EC --> SC --> SN --> MF
-    MF --> HP
-    MF --> FP
-    MF --> EP
-    HP --> RESULT
-    FP --> RESULT
-    EP --> RESULT
+    HC_FP & HC_FP_EX --> SUBST --> WRITE --> PLAYBOOK --> CTX
+    ROOT & STUDENT & HTTP --> CHECKS
+    CHECKS --> HP & FP & EP --> RESULT
 
     RESULT{success?}
-    RESULT -->|Yes| OK([VerificationResult: success true])
-    RESULT -->|No| FAIL([VerificationResult: success false\nper-command failureReason])
+    RESULT -->|Yes| OK(["VerificationResult: success"])
+    RESULT -->|No| FAIL(["VerificationResult: failed — per-command failureReason"])
 
-    WRITE -.->|cleanup in finally| DEL["unlink checks JSON"]
+    WRITE -.->|cleanup| DEL["unlink checks JSON"]

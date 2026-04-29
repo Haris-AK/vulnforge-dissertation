@@ -6,49 +6,32 @@
   }
 }}%%
 stateDiagram-v2
-    [*] --> Pipeline : POST /api/challenges/launch\nDB constraint check passes
+    [*] --> Pipeline : POST /api/challenges/launch
 
-    state "Launch Pipeline — SSE stream" as Pipeline {
-        state "Generation" as Generating {
-            [*] --> CallingLLM
-            CallingLLM --> Validating : OpenRouter response
-            Validating --> [*] : Zod + policy pass
-        }
-        state "Deployment" as Deploying {
-            [*] --> CreatingContainer
-            CreatingContainer --> ConfiguringUser : pct create + start
-            ConfiguringUser --> [*] : student user + SSH key ready
-        }
-        state "Injection" as Injecting {
-            [*] --> StagingFiles
-            StagingFiles --> PushingFiles : host staging dir written
-            PushingFiles --> RunningSetup : pct push per file
-            RunningSetup --> [*] : setup_commands + service restart
-        }
-        state "Verification" as Verifying {
-            [*] --> HealthChecks
-            HealthChecks --> FlagProtectionChecks
-            FlagProtectionChecks --> [*]
-        }
+    state "Launch Pipeline (SSE stream)" as Pipeline {
+        Generating : Generating\nOpenRouter + Zod + policy
+        Deploying  : Deploying container\nAnsible deploy.yml
+        Injecting  : Injecting vulnerability\nAnsible inject-vulnerability.yml
+        Verifying  : Verifying\nHealth + flag-protection checks
 
         Generating --> Deploying
         Deploying  --> Injecting
         Injecting  --> Verifying
     }
 
-    Pipeline --> active     : Verification passed\nINSERT challenge row — expires_at = now + 1h
-    Pipeline --> [*]        : Any stage failed\nContainer destroyed — SSE error event
+    Pipeline --> Active   : Verification passed — challenge row inserted
+    Pipeline --> [*]      : Stage failed — container destroyed
 
-    state active {
-        [*] --> running
-        running --> running      : User connects via SSH\nAttempts exploits
-        running --> flagSubmitted : POST /api/challenges/submit-flag\ncorrect flag string
+    state Active {
+        [*] --> Running
+        Running --> Running       : User connects via SSH
+        Running --> FlagSubmitted : Correct flag submitted
     }
 
-    active    --> completed : Flag submitted correctly
-    active    --> expired   : expires_at elapsed\nTTL reaper or app-layer check
-    active    --> destroyed : User clicks Destroy\nPOST /api/challenges/destroy
+    Active --> Completed : Flag accepted
+    Active --> Expired   : TTL elapsed
+    Active --> Destroyed : User clicks Destroy
 
-    completed --> [*]
-    expired   --> [*]
-    destroyed --> [*]
+    Completed --> [*]
+    Expired   --> [*]
+    Destroyed --> [*]

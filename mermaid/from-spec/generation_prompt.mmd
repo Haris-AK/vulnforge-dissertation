@@ -1,8 +1,8 @@
 %%{init: {
   "flowchart": {
     "htmlLabels": true,
-    "nodeSpacing": 32,
-    "rankSpacing": 46,
+    "nodeSpacing": 30,
+    "rankSpacing": 55,
     "curve": "basis"
   },
   "theme": "base",
@@ -17,32 +17,26 @@
   }
 }}%%
 flowchart TD
-    subgraph INPUT["Inputs to buildVulnerabilityPrompt()"]
+    subgraph INPUT["Inputs"]
         CAT[categoryId]
         DIFF[difficulty]
         FLAG_IN[flag string]
-        HIST[history: ChallengeHistoryEntry array]
+        HIST[challenge history]
     end
 
     subgraph DIVERSITY["Diversity Mechanisms"]
-        VSEL["① Variant Selection\nRandom pick from 8–10 sub-types\ne.g. Nginx alias path traversal\nApache mod_status exposure"]
-        TSEL["② Theme Selection\nRandom pick from 18 fictional orgs\ne.g. Thornfield Veterinary Clinic\nHarwick Freight Tracker"]
-        EXCL["③ History Exclusion List\nFilter history by categoryId\nCap at 10 entries\nAppend: Do NOT generate:\n— Title A (solution: ...)\n— Title B (solution: ...)"]
+        VSEL["① Variant Selection — random pick from 8–10 sub-types"]
+        TSEL["② Theme Selection — random pick from 18 fictional organisations"]
+        EXCL["③ History Exclusion — filter by category · cap at 10 · append exclusion list"]
     end
 
     subgraph ASSEMBLY["Prompt Assembly"]
-        PROMPT_BUILD["Assemble user prompt\nCategory-specific template\nMandatory variant directive\nApplication theme\nExclusion list\nFlag literal\nDifficulty constraints"]
-        META["Return BuiltPrompt\n{ prompt, metadata:\n  { selectedVariant, selectedTheme } }"]
+        PROMPT_BUILD["Assemble prompt — category template · variant directive · theme · exclusion list · flag · difficulty"]
+        META["Return BuiltPrompt — { prompt, selectedVariant, selectedTheme }"]
     end
 
-    CAT --> VSEL
-    CAT --> TSEL
+    CAT --> VSEL & TSEL
     HIST --> EXCL
-    DIFF --> PROMPT_BUILD
-    FLAG_IN --> PROMPT_BUILD
-
-    VSEL --> PROMPT_BUILD
-    TSEL --> PROMPT_BUILD
-    EXCL --> PROMPT_BUILD
-
+    DIFF & FLAG_IN --> PROMPT_BUILD
+    VSEL & TSEL & EXCL --> PROMPT_BUILD
     PROMPT_BUILD --> META
