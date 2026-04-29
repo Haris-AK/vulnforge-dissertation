@@ -200,9 +200,9 @@ The architecure of VulnForge involved a fullstack Next.JS application connected 
     \centering
     \includegraphics[
         width=\linewidth,
-        height=1.0\textheight,
+        height=15cm,
         keepaspectratio
-    ]{figures/system_architecture.pdf}
+    ]{mermaid/from-spec/system_architecture.pdf}
     \caption{System Architecture}
     \label{fig:system-architecture}
 \end{figure}
@@ -226,11 +226,11 @@ The database contains four tables: users, sessions, challenges and messages.
     \label{fig:db_schema}
 \end{figure}
 
-The challenges table is one of the most imporatnt, connecting the user facing challenge to the generated infrastructure. It stores metadata such as title, description, hint, category, difficulty and attack vector. It also stores server only data (the flag and solution summary). Repository methods deliberately expose a public challenge type that omits these fields unless the challenge is completed, if so, it provides the solution summary as a learning opportunity. 
+The challenges table is one of the most imporatnt, connecting the user facing challenge to the generated infrastructure. It stores metadata such as title, description, hint, category, difficulty and attack vector. It also stores server only data (the flag and solution summary). Specific methods deliberately expose a public challenge type that omits these fields unless the challenge is completed, when completed, it provides the solution summary as a learning opportunity. 
 
 The challenge is represented in four states:
 
-\begin{table}[h]
+\begin{table}[htbp]
     \centering
     \begin{tabular}{@{}>{\raggedright\arraybackslash}p{2cm}p{7cm}p{5cm}@{}}
         \toprule
@@ -266,7 +266,7 @@ The challenge lifecycle presented to the user is deliberatly simple, however req
     \label{fig:challenge_lifecycle}
 \end{figure}
 
-There is a deliberate separation between the logical flow and the infrastructure state. The database may mark a challenge as destroyed before the Ansible destroy playbook has finished running, and the TTL reaper may delete a container before the database is next checked. VulnForge accepts these possibilities as the main requirement is to prevent the user from continuing to interact with stale challenges that should be destroyed, and to prevent indefinite resource usage. 
+There is a deliberate separation between the logical flow and the infrastructure state. The database may mark a challenge as destroyed before the Ansible destroy playbook has finished running, and the TTL reaper may delete a container before the database is next checked. VulnForge accepts these possibilities as the main requirement is to prevent the user from continuing to interact with stale challenges that should be destroyed, and to prevent indefinite resource usage. Having the TTL reaper as a cronjob that runs every 5 minutes, checking container \lstinline|uptime| to see if it exceeds 60 minutes means that we can guarantee containers are cleaned up, regardless of database state. 
 
 \subsection{Launch Pipeline}\label{sec:launch_pipeline}
 The challenge launch pipeline is the most complex aspect of the project. It gets exposed to the user via the browser as a server sent event stream so that the UI can show progress as it is occuring. This is because the operations can take a while, and we do not want the user to think something has frozen, so this shows them intermediate progress. 
