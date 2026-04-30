@@ -108,8 +108,12 @@ hacker-font:
 
 main: $(MAIN).tex qdissertation.cls bibliography.bib acronyms.tex \
 	C*/chapter*.tex A*/appendix*.tex
-	$(LATEXMK) $(LATEXMK_OPTS) $(LATEXMK_ENGINE) $(LATEXMK_CMD) $(MAIN)
+	lualatex -interaction=nonstopmode -file-line-error $(MAIN).tex
+	-bibtex $(MAIN)
+	lualatex -interaction=nonstopmode -file-line-error $(MAIN).tex
 	-makeglossaries $(MAIN)
+	lualatex -interaction=nonstopmode -file-line-error $(MAIN).tex
+	lualatex -interaction=nonstopmode -file-line-error $(MAIN).tex
 
 clean:
 	$(LATEXMK) -c $(MAIN)

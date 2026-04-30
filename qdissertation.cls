@@ -203,13 +203,10 @@
   }%
 \fi
 
-% Use LaTeX's standard list-file handling. Earlier versions of this class patched
-% \@writefile while reading the .aux file to regenerate .lof/.lot/.loa files, but
-% that can corrupt auxiliary files and causes LuaLaTeX/latexmk to fail on reruns.
-% The kernel already writes list files from captions during the normal document run.
-% The .aux file is read again during end-document checks; make \@writefile inert
-% for that pass so TOC/LOF/LOT entries are not reprocessed while files are closing.
-\AtEndDocument{\let\@writefile\@gobbletwo}
+% Use LaTeX's standard list-file handling. The .toc/.lof/.lot/.loa files are
+% regenerated from the .aux file at the end of each run, then read on the next run.
+% Do not disable \@writefile at \AtEndDocument: doing so leaves those list files
+% empty/truncated after \tableofcontents or \listoffigures opens them for writing.
 
 % Citations: natbib with options matching class (harvard or numeric)
 \ifqdissertation@cite@harvard
@@ -1168,18 +1165,15 @@
 \newcommand{\frontlists}{%
   \tableofcontents
   \cleardoublepage
-  \qdissertation@checklof
-  \ifqdissertation@haslof
-    \listoffigures
-    \addcontentsline{toc}{chapter}{List of Figures}%
-    \cleardoublepage
-  \fi
-  \qdissertation@checklot
-  \ifqdissertation@haslot
-    \listoftables
-    \addcontentsline{toc}{chapter}{List of Tables}%
-    \cleardoublepage
-  \fi
+  % Always run the standard list commands so LaTeX opens/regenerates the
+  % corresponding .lof/.lot files during the build. Conditionalising these on
+  % the existence of an old list file creates a first-build circular dependency.
+  \listoffigures
+  \addcontentsline{toc}{chapter}{List of Figures}%
+  \cleardoublepage
+  \listoftables
+  \addcontentsline{toc}{chapter}{List of Tables}%
+  \cleardoublepage
   \qdissertation@checkloa
   \ifqdissertation@hasloa
     \listofalgorithms

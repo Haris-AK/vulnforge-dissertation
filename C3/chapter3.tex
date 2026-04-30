@@ -208,7 +208,7 @@ The architecure of VulnForge involved a fullstack Next.JS application connected 
 \end{figure}
 
 The web application is the central part of the application. It validates user input, manages accounts and sessions, stores challenge state, invokes the LLM calls, invokes the container orchestration, presents the challenge and confirms completion. Ansible is used as the infrastructure automation layer, with Proxmox as the hypervisor. This keeps the web application focused on key operations, whilst handing over any infrastructure tasks to Ansible via Ansible Playbooks.
-\marginpar{ TODO - Potentially explain what ansible & playbooks are.}
+\marginpar{ TODO - Potentially explain what ansible \& playbooks are.}
 It deliberately avoids exposing infrastructure code to users. Students do not need to interact with Proxmox, Ansible and APIs. They only interact with the generated environment and the chatbot.
 
 \subsection{Data Model}\label{sec:data_model}
@@ -349,7 +349,7 @@ The tutors purpose is to provide progressive guidance, it should explain concept
 
 \begin{enumerate}
     \item Firstly, the tutor has system prompt instructions, that instruct it not to reveal the flag, the flag path, or any full step-by-step solution.
-    \item Secondly, the application checks the generated response response before streaming it back, and check it for a \lstinline{FLAG{...}} pattern, the stored flag, or the solution summary. If any are present, the response is replaced by a block message saying: \lstinline{"I can't provide the flag or the full exploit path. Ask for a smaller hint and I'll guide you step by step."}. The messages are persisted after each entire response by the LLM. This supports the continued educational aspect, enabling read only review in the history page to fully review how you as a user approached the challenge. 
+    \item Secondly, the application checks the generated response response before streaming it back, and check it for a \lstinline|FLAG{...}| pattern, the stored flag, or the solution summary. If any are present, the response is replaced by a block message saying: \lstinline{"I can't provide the flag or the full exploit path. Ask for a smaller hint and I'll guide you step by step."}. The messages are persisted after each entire response by the LLM. This supports the continued educational aspect, enabling read only review in the history page to fully review how you as a user approached the challenge. 
 \end{enumerate}
 
 \subsection{Challnege history and learning review}\label{sec:challenge-history}
@@ -383,7 +383,7 @@ Then you can look at specific challenges, seeing the solution summary and your c
 
 \section{Implementation}\label{sec:impl}
 
-\subsection{Tech Stack & Project Structure}\label{sec:tech-stack}
+\subsection{Tech Stack \& Project Structure}\label{sec:tech-stack}
 
 \marginpar{TODO: Add versions here}
 The project was built with TypeScript and React for the web application, Drizzle ORM as a mapper for the database to allow type safe queries, SQLite as a local database, Zod for schema validation, OpenRouter for LLM integration and Pino for logging. The back end was constructed with Next.JS to have actions run on the server instead of the client, Ansible to automatically deploy and provision containers, and Proxmox as a hypervisor. 
