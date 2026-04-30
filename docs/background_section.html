@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Background — VulnForge Dissertation</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=Source+Sans+3:wght@400;600&family=Source+Code+Pro:wght@400&display=swap');
+
+  :root {
+    --text: #1a1a2e;
+    --accent: #2a5c8a;
+    --muted: #5a6a7a;
+    --rule: #c8d0d8;
+    --fig-bg: #f4f6f9;
+    --fig-border: #d0d8e4;
+    --max: 760px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Lora', Georgia, serif;
+    font-size: 11.5pt;
+    line-height: 1.75;
+    color: var(--text);
+    background: #fff;
+    padding: 48px 24px 80px;
+  }
+
+  .page { max-width: var(--max); margin: 0 auto; }
+
+  h1 {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 22pt;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    border-bottom: 2px solid var(--accent);
+    padding-bottom: 10px;
+    margin-bottom: 28px;
+    color: var(--accent);
+  }
+
+  h2 {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 13.5pt;
+    font-weight: 600;
+    margin-top: 40px;
+    margin-bottom: 14px;
+    color: var(--text);
+    border-left: 3px solid var(--accent);
+    padding-left: 10px;
+  }
+
+  p { margin-bottom: 13px; text-align: justify; }
+
+  cite { font-style: italic; }
+
+  .figure {
+    margin: 32px 0;
+    border: 1px solid var(--fig-border);
+    border-radius: 6px;
+    background: var(--fig-bg);
+    padding: 20px 20px 16px;
+  }
+
+  .figure svg { display: block; width: 100%; }
+
+  .fig-caption {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 9.5pt;
+    color: var(--muted);
+    margin-top: 10px;
+    line-height: 1.5;
+  }
+
+  .fig-caption strong { color: var(--text); }
+
+  .ref { 
+    font-family: 'Source Sans 3', sans-serif; 
+    font-size: 9.5pt;
+    color: var(--muted);
+  }
+
+  .wordcount {
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 9pt;
+    color: #aaa;
+    text-align: right;
+    margin-bottom: 24px;
+  }
+
+  @media print {
+    body { padding: 0; font-size: 11pt; }
+    h2 { page-break-after: avoid; }
+    .figure { page-break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<div class="wordcount">≈ 3,100 words (excluding figure captions)</div>
+
+<h1>2. Background</h1>
+
+<h2>2.1 The Wider Context: A Global Cybersecurity Skills Crisis</h2>
+
+<p>The demand for practised cybersecurity professionals has grown considerably faster than the education system's capacity to produce them. The 2024 ISC2 Cybersecurity Workforce Study, which surveyed more than 15,000 practitioners across 14 countries, estimated that the global workforce gap — the number of additional qualified professionals needed to adequately defend organisations — reached <strong>4.8 million in 2024</strong>, an increase of 19.1 percent from the 4.0 million gap reported just one year earlier [ISC2, 2024]. The study further found that 90 percent of respondents reported skills gaps within their teams, and 67 percent reported outright staffing shortages. The United States Bureau of Labor Statistics projects a 33 percent growth rate for information security analysts through to 2034, compared with a four percent average across all occupations [BLS, 2024]. This is not merely a hiring problem: ISC2 also found that 64 percent of practitioners believe skills gaps pose a greater organisational risk than staff headcount alone, with AI and machine learning competency, cloud security, and risk assessment identified as the areas of widest shortfall.</p>
+
+<p>Skills gaps of this magnitude cannot be addressed by classroom instruction alone. Cybersecurity is an applied discipline in which procedural knowledge — how to identify a misconfiguration, trace an execution path, chain two weaknesses into an exploit — degrades rapidly without regular hands-on reinforcement. The dominant response from the practitioner community has been Capture-the-Flag (CTF) competitions and purpose-built skills laboratories, which offer deliberate practice against realistic targets in a consequence-free environment. Chapman, Burket and Brumley [2014] were among the first to document the positive outcomes of CTF-based learning at scale, reporting broad engagement across skill levels through the picoCTF platform. Subsequent work by Švábenský, Vykopal and Čeleda [2020] conducted the most comprehensive systematic literature review of cybersecurity education papers to date, reviewing 1,748 publications across SIGCSE and ITiCSE from 2010 to 2019 and identifying hands-on exercises as the most consistently effective learning modality. However, that same body of research has identified a critical structural weakness in the dominant CTF model: the static nature of challenge content. This limitation — its causes, consequences, and the inadequacy of existing solutions — is the problem the present project addresses.</p>
+
+<h2>2.2 The Incumbent CTF and Training-Platform Ecosystem</h2>
+
+<p>The commercial and academic platforms that dominate hands-on cybersecurity training share a common architectural assumption: a challenge is authored once, quality-assured, published, and thereafter served identically to every learner who encounters it. Understanding why this assumption persists — and why it is pedagogically harmful — requires a survey of the major platforms.</p>
+
+<p><strong>Hack The Box (HTB)</strong>, founded in 2017, is the largest community-oriented platform for professional and aspiring penetration testers. It publishes one new "Machine" (a vulnerable virtual machine) per week and simultaneously retires another, maintaining a rotating catalogue of approximately twenty free-tier accessible targets. Each Machine is authored by a community contributor, passes an internal quality review, and is deployed once: every player connects via a per-user OpenVPN tunnel into private lab subnets, but the services, vulnerability chain, and 32-character flag hashes are fixed across all sessions. On the day a machine is retired, walkthrough authors such as IppSec (YouTube) and 0xdf (blog) publish full solutions, instantly converting the solved challenge into a searchable script that any future learner can follow verbatim. HTB has introduced an AI feature ("Guided Mode") but it functions as a hint provider over pre-existing static challenges rather than as a generator of new content.</p>
+
+<p><strong>TryHackMe</strong>, founded in 2018, takes a more scaffolded, beginner-oriented approach, organising content into "Rooms" — guided laboratories combining written instruction with deployable targets — and reporting over three million registered users. Like HTB, every deployed instance of a given Room contains identical vulnerabilities and accepts only the canonical flag string, with limited exceptions for King-of-the-Hill modes that rotate flags hourly while leaving the underlying vulnerability unchanged.</p>
+
+<p><strong>picoCTF</strong>, operated by Carnegie Mellon University's CyLab since 2013, is the largest free student-oriented CTF. Its annual competition has accumulated over 900,000 learners; its picoGym archive offers over 900 solved challenges on demand. <strong>PortSwigger Web Security Academy</strong>, launched in 2019, represents the closest approach to per-user content in the mainstream sector: it provisions a fresh clone of a vulnerable web application for each learner for each of its 250-plus labs. However, the vulnerability class, codebase logic, and canonical solution sequence are identical across all instances — per-user provisioning addresses isolation and availability, not content variation.</p>
+
+<p>Švábenský et al. [2021], in a quantitative analysis of 15,963 CTF write-ups published on CTFtime since 2012, demonstrated that publicly documented solutions concentrate heavily around the cryptography and network exploitation categories, creating a corpus of searchable shortcuts that undermines the learning value of challenges in those areas. Vykopal, Švábenský and Chang [2020] identified plagiarism and scoring-gaming as the primary structural weaknesses of CTF-based university assessment, arguing that the scoring integrity of any static challenge deteriorates in direct proportion to the size of the learner population it has passed through. The figure below summarises how the major platforms compare across dimensions directly relevant to this problem.</p>
+
+<div class="figure">
+  <svg viewBox="0 0 720 260" xmlns="http://www.w3.org/2000/svg" font-family="Source Sans 3, sans-serif">
+    <!-- Background -->
+    <rect width="720" height="260" fill="#f4f6f9" rx="4"/>
+    
+    <!-- Header row -->
+    <rect x="0" y="0" width="720" height="36" fill="#2a5c8a" rx="4"/>
+    <text x="8" y="23" fill="white" font-size="10.5" font-weight="600">Platform</text>
+    <text x="180" y="23" fill="white" font-size="10.5" font-weight="600">Per-user content variation</text>
+    <text x="340" y="23" fill="white" font-size="10.5" font-weight="600">AI-generated challenges</text>
+    <text x="490" y="23" fill="white" font-size="10.5" font-weight="600">Context-aware tutor</text>
+    <text x="620" y="23" fill="white" font-size="10.5" font-weight="600">Ephemeral</text>
+
+    <!-- Alternating rows -->
+    <rect x="0" y="36" width="720" height="32" fill="#eaf0f7"/>
+    <rect x="0" y="68" width="720" height="32" fill="#f4f6f9"/>
+    <rect x="0" y="100" width="720" height="32" fill="#eaf0f7"/>
+    <rect x="0" y="132" width="720" height="32" fill="#f4f6f9"/>
+    <rect x="0" y="164" width="720" height="32" fill="#eaf0f7"/>
+    <rect x="0" y="196" width="720" height="32" fill="#f4f6f9"/>
+    <rect x="0" y="228" width="720" height="32" fill="#2a5c8a" rx="4"/>
+
+    <!-- Row labels -->
+    <text x="8" y="57" fill="#1a1a2e" font-size="10">Hack The Box</text>
+    <text x="8" y="89" fill="#1a1a2e" font-size="10">TryHackMe</text>
+    <text x="8" y="121" fill="#1a1a2e" font-size="10">picoCTF</text>
+    <text x="8" y="153" fill="#1a1a2e" font-size="10">PortSwigger Web Academy</text>
+    <text x="8" y="185" fill="#1a1a2e" font-size="10">SecGen (Schreuders 2017)</text>
+    <text x="8" y="217" fill="#1a1a2e" font-size="10">AgentCyTE (2025)</text>
+    <text x="8" y="249" fill="white" font-size="10" font-weight="700">VulnForge (proposed)</text>
+
+    <!-- Divider lines -->
+    <line x1="172" y1="36" x2="172" y2="260" stroke="#c8d0d8" stroke-width="1"/>
+    <line x1="334" y1="36" x2="334" y2="260" stroke="#c8d0d8" stroke-width="1"/>
+    <line x1="484" y1="36" x2="484" y2="260" stroke="#c8d0d8" stroke-width="1"/>
+    <line x1="612" y1="36" x2="612" y2="260" stroke="#c8d0d8" stroke-width="1"/>
+
+    <!-- Ticks / crosses helper -->
+    <!-- HTB: No / No / Partial / Yes -->
+    <text x="240" y="57" fill="#c0392b" font-size="13" text-anchor="middle">✗</text>
+    <text x="407" y="57" fill="#c0392b" font-size="13" text-anchor="middle">✗</text>
+    <text x="548" y="57" fill="#e67e22" font-size="10" text-anchor="middle">Hint only</text>
+    <text x="655" y="57" fill="#27ae60" font-size="13" text-anchor="middle">✓</text>
+
+    <!-- TryHackMe -->
+    <text x="240" y="89" fill="#c0392b" font-size="13" text-anchor="middle">✗</text>
+    <text x="407" y="89" fill="#c0392b" font-size="13" text-anchor="middle">✗</text>
+    <text x="548" y="89" fill="#c0392b" font-size="13" text-anchor="middle">✗</text>
+    <text x="655" y="89" fill="#27ae60" font-size="13" text-anchor="middle">✓</text>
+
+    <!-- picoCTF -->
+    <text x="240" y="121" fill="#e67e22" font-size="10" text-anchor="middle">Template only</text>
+    <text x="407" y="121" fill="#c0392b" font-size="13" text-anchor="middle">✗</text>
+    <text x="548" y="121" fill="#c0392b" font-size="13" text-anchor="middle">✗</text>
+    <text x="655" y="121" fill="#c0392b" font-size="13" text-anchor="middle">✗</text>
+
+    <!-- PortSwigger -->
+    <text x="240" y="153" fill="#c0392b" font-size="10" text-anchor="middle">Isolation only</text>
+    <text x="407" y="153" fill="#c0392b" font-size="13" text-anchor="middle">✗</text>
+    <text x="548" y="153" fill="#c0392b" font-size="13" text-anchor="middle">✗</text>
+    <text x="655" y="153" fill="#27ae60" font-size="13" text-anchor="middle">✓</text>
+
+    <!-- SecGen -->
+    <text x="240" y="185" fill="#e67e22" font-size="10" text-anchor="middle">Template-based</text>
+    <text x="407" y="185" fill="#c0392b" font-size="13" text-anchor="middle">✗</text>
+    <text x="548" y="185" fill="#c0392b" font-size="13" text-anchor="middle">✗</text>
+    <text x="655" y="185" fill="#27ae60" font-size="13" text-anchor="middle">✓</text>
+
+    <!-- AgentCyTE -->
+    <text x="240" y="217" fill="#e67e22" font-size="10" text-anchor="middle">CVE-library only</text>
+    <text x="407" y="217" fill="#e67e22" font-size="10" text-anchor="middle">Partial (XML)</text>
+    <text x="548" y="217" fill="#c0392b" font-size="13" text-anchor="middle">✗</text>
+    <text x="655" y="217" fill="#27ae60" font-size="13" text-anchor="middle">✓</text>
+
+    <!-- VulnForge -->
+    <text x="240" y="249" fill="#90e0a0" font-size="13" text-anchor="middle" font-weight="700">✓</text>
+    <text x="407" y="249" fill="#90e0a0" font-size="13" text-anchor="middle" font-weight="700">✓</text>
+    <text x="548" y="249" fill="#90e0a0" font-size="13" text-anchor="middle" font-weight="700">✓</text>
+    <text x="655" y="249" fill="#90e0a0" font-size="13" text-anchor="middle" font-weight="700">✓</text>
+  </svg>
+  <p class="fig-caption"><strong>Figure 1.</strong> Comparison of major cybersecurity training platforms across four dimensions critical to the problem addressed by this project. ✓ = fully supported, ✗ = absent, amber text = partial support. Per-user content variation at PortSwigger serves isolation, not pedagogical diversity. Only the proposed VulnForge system satisfies all four criteria simultaneously.</p>
+</div>
+
+<h2>2.3 Prior Work on Automated and Procedural Challenge Generation</h2>
+
+<p>A small but important academic tradition anticipates this project by attempting to automate or procedurally vary CTF content. Understanding where each system falls short is essential to establishing the novelty and necessity of the approach taken here.</p>
+
+<p>The foundational contribution is <strong>Automatic Problem Generation (APG)</strong>, introduced by Burket, Chapman, Becker, Ganas and Brumley at the USENIX Summit on Gaming, Games, and Gamification in Security Education in 2015 [Burket et al., 2015]. APG was motivated directly by flag-sharing observed during picoCTF 2014: the system generates many instances of a challenge from a single parameterised template, ensuring that each player receives a distinct flag and, in some tasks, a distinct problem structure. APG remains deployed for a subset of picoCTF's cryptographic and web challenges but is not extensible to challenge types whose structure cannot be captured by a declarative template.</p>
+
+<p>At the same 2015 symposium, Feng described a related approach for reversing challenges, applying metamorphic transformations to compiled binaries to produce surface-diverse but semantically equivalent targets. This technique addresses replay-value for a narrow sub-category of challenges but does not generalise to web applications, network services, or system misconfiguration scenarios.</p>
+
+<p><strong>AutoCTF</strong> [Hulin et al., USENIX WOOT 2017] took a different approach, extending the LAVA binary analysis framework to inject exploitable memory-corruption bugs (specifically, out-of-bounds reads triggered by attacker-controlled data flow) into existing application codebases. A four-university trial event demonstrated that students could solve these automatically generated pwnables, but the technique is tightly coupled to LAVA's data-flow analysis and does not extend beyond memory-corruption challenges in C programs.</p>
+
+<p>The most directly relevant precursor is the <strong>Security Scenario Generator (SecGen)</strong> [Schreuders et al., USENIX ASE 2017], a Ruby-based framework that composes randomly selected, pre-authored Puppet modules — each encoding a specific service misconfiguration, known CVE, or user-account vulnerability — into a full virtual machine. SecGen supports rich narrative scenarios and a hints subsystem. However, every vulnerability module in SecGen is hand-authored by a human security practitioner; the system randomises the selection and combination of these modules, not the vulnerabilities themselves. A new vulnerability class requires a new human-authored module.</p>
+
+<p><strong>ALPACA</strong> [Eckroth et al., ACM SE 2019] extended this composability idea using AI planning over a structured vulnerability-and-configuration database to construct multi-step exploit chains. Like SecGen, it depends on a pre-populated artefact library and does not synthesise novel attack surfaces.</p>
+
+<p>Most recently, <strong>AgentCyTE</strong> [Rodriguez et al., arXiv 2025] introduced an LLM-driven agent that patches topology-definition XML files for the CORE network emulator and integrates CVEs from the Vulhub repository into training scenarios. This represents the closest published approach to LLM-generated cybersecurity training content. Critically, however, AgentCyTE's LLM modifies scenario scaffolding and selects from a library of pre-existing CVE-backed Docker images; it does not synthesise new vulnerable code. Rodriguez et al. measured that unconstrained LLMs produced correct output on only approximately 38 percent of scenarios (GPT-4 at 19 percent), rising to approximately 99 percent accuracy for minor structural edits when an agentic feedback loop was applied — a finding that underscores both the feasibility and the engineering discipline required for LLM-driven content generation.</p>
+
+<div class="figure">
+  <svg viewBox="0 0 720 148" xmlns="http://www.w3.org/2000/svg" font-family="Source Sans 3, sans-serif" font-size="10">
+    <rect width="720" height="148" fill="#f4f6f9" rx="4"/>
+
+    <!-- Timeline spine -->
+    <line x1="30" y1="74" x2="690" y2="74" stroke="#2a5c8a" stroke-width="2"/>
+    <polygon points="690,70 700,74 690,78" fill="#2a5c8a"/>
+
+    <!-- Nodes: x positions at ~2015, 2017a, 2017b, 2019, 2025, proposed -->
+    <!-- APG 2015 -->
+    <circle cx="80" cy="74" r="7" fill="#2a5c8a"/>
+    <line x1="80" y1="67" x2="80" y2="30" stroke="#2a5c8a" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="80" y="24" text-anchor="middle" fill="#2a5c8a" font-weight="600">APG</text>
+    <text x="80" y="36" text-anchor="middle" fill="#5a6a7a">Burket et al.</text>
+    <text x="80" y="47" text-anchor="middle" fill="#5a6a7a">2015</text>
+    <text x="80" y="59" text-anchor="middle" fill="#5a6a7a">Template</text>
+
+    <!-- AutoCTF 2017 -->
+    <circle cx="220" cy="74" r="7" fill="#2a5c8a"/>
+    <line x1="220" y1="81" x2="220" y2="118" stroke="#2a5c8a" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="220" y="128" text-anchor="middle" fill="#2a5c8a" font-weight="600">AutoCTF</text>
+    <text x="220" y="139" text-anchor="middle" fill="#5a6a7a">Hulin et al. 2017</text>
+    <text x="220" y="62" text-anchor="middle" fill="#5a6a7a">Bug inject</text>
+
+    <!-- SecGen 2017 -->
+    <circle cx="330" cy="74" r="7" fill="#2a5c8a"/>
+    <line x1="330" y1="67" x2="330" y2="30" stroke="#2a5c8a" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="330" y="24" text-anchor="middle" fill="#2a5c8a" font-weight="600">SecGen</text>
+    <text x="330" y="36" text-anchor="middle" fill="#5a6a7a">Schreuders et al.</text>
+    <text x="330" y="47" text-anchor="middle" fill="#5a6a7a">2017</text>
+    <text x="330" y="59" text-anchor="middle" fill="#5a6a7a">Compose modules</text>
+
+    <!-- ALPACA 2019 -->
+    <circle cx="450" cy="74" r="7" fill="#2a5c8a"/>
+    <line x1="450" y1="81" x2="450" y2="118" stroke="#2a5c8a" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="450" y="128" text-anchor="middle" fill="#2a5c8a" font-weight="600">ALPACA</text>
+    <text x="450" y="139" text-anchor="middle" fill="#5a6a7a">Eckroth et al. 2019</text>
+    <text x="450" y="62" text-anchor="middle" fill="#5a6a7a">AI planning</text>
+
+    <!-- AgentCyTE 2025 -->
+    <circle cx="580" cy="74" r="7" fill="#e67e22"/>
+    <line x1="580" y1="67" x2="580" y2="30" stroke="#e67e22" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="580" y="24" text-anchor="middle" fill="#e67e22" font-weight="600">AgentCyTE</text>
+    <text x="580" y="36" text-anchor="middle" fill="#5a6a7a">Rodriguez et al.</text>
+    <text x="580" y="47" text-anchor="middle" fill="#5a6a7a">2025</text>
+    <text x="580" y="59" text-anchor="middle" fill="#5a6a7a">LLM + CVE lib</text>
+
+    <!-- VulnForge -->
+    <circle cx="680" cy="74" r="9" fill="#27ae60"/>
+    <line x1="680" y1="81" x2="680" y2="118" stroke="#27ae60" stroke-width="1" stroke-dasharray="3,2"/>
+    <text x="680" y="128" text-anchor="middle" fill="#27ae60" font-weight="700">VulnForge</text>
+    <text x="680" y="139" text-anchor="middle" fill="#27ae60">End-to-end LLM</text>
+    <text x="680" y="62" text-anchor="middle" fill="#27ae60" font-weight="600">Novel synthesis</text>
+
+    <!-- "All template- or library-dependent" label -->
+    <rect x="60" y="86" width="510" height="14" fill="#fef3e2" rx="2"/>
+    <text x="315" y="97" text-anchor="middle" fill="#c0392b" font-size="9">All prior systems depend on hand-authored templates or pre-existing CVE libraries — none synthesise novel vulnerable code</text>
+  </svg>
+  <p class="fig-caption"><strong>Figure 2.</strong> Chronological progression of automated CTF and cybersecurity training content generation systems. All prior systems (blue nodes) depend on hand-authored templates, bug-injection into existing code, or pre-existing CVE repositories. AgentCyTE (2025, amber) introduces LLM involvement but remains library-dependent. VulnForge (green) is the first system to synthesise novel vulnerable code end-to-end from an LLM without dependence on a human-curated artefact library.</p>
+</div>
+
+<h2>2.4 Large Language Models as Vulnerability Authors and Cybersecurity Agents</h2>
+
+<p>The empirical evidence that large language models reliably produce security-relevant code is now extensive enough that it constitutes an established finding rather than a speculative one. The foundational result is from <strong>Pearce, Ahmad, Tan, Dolan-Gavitt and Karri</strong> [IEEE S&amp;P 2022], whose systematic evaluation of GitHub Copilot's code contributions across 89 scenarios drawn from MITRE's 2021 Top-25 Common Weakness Enumeration found that <strong>approximately 40 percent of generated programs contained exploitable vulnerabilities</strong>, concentrated in CWEs for buffer overflows, SQL injection, and use-after-free. This finding is directly relevant to the present project: it demonstrates that LLMs will, without special prompting, insert the very vulnerability classes most educationally valuable for training purposes.</p>
+
+<p>A more concerning dimension of this behaviour was established by <strong>Perry, Srivastava, Kumar and Boneh</strong> [ACM CCS 2023], whose controlled experiment with 47 participants found that AI-assisted programmers produced significantly less secure code and were simultaneously more likely to believe their code was secure. On a signing-and-verification task, only three percent of AI-assisted participants produced a secure implementation compared with 21 percent of those working unaided. The implication is that LLMs not only produce insecure code but calibrate developer confidence incorrectly — a risk that a pedagogical system must actively manage rather than amplify.</p>
+
+<p>Meta's <strong>CyberSecEval</strong> benchmark suite [Bhatt et al., 2023; 2024] has systematised the measurement of LLM security behaviour across insecure-code propensity, attack-assistance compliance, and prompt injection susceptibility. CyberSecEval 1 found that more capable models tended to suggest more insecure code, and that models complied with cyberattack-assistance prompts in approximately 52 percent of cases. CyberSecEval 2 introduced a prompt-injection evaluation suite, finding successful injection rates of 26–41 percent across GPT-4, Mistral, and Code Llama.</p>
+
+<p>The offensive agent literature demonstrates that LLMs can not only produce vulnerable code but reason about and exploit it at levels approaching human capability. <strong>PentestGPT</strong> [Deng et al., USENIX Security 2024] achieved a 228.6 percent improvement over baseline GPT-3.5 on penetration testing benchmarks through a tripartite reasoning architecture. TitanFuzz [Deng et al., ISSTA 2023] used LLMs as zero-shot fuzzers and detected 65 previously unknown bugs in TensorFlow and PyTorch, achieving 30–50 percent higher coverage than state-of-the-art fuzzers. The most authoritative validation of LLM cyber-capability at scale is the <strong>DARPA AI Cyber Challenge (AIxCC)</strong>: at the DEF CON 33 finals in August 2025, competing Cyber Reasoning Systems collectively identified 86 percent of synthetic vulnerabilities and patched 68 percent across 54 million lines of open-source code, with one system independently discovering a previously unknown vulnerability in SQLite3 [DARPA, 2025].</p>
+
+<p>Parallel benchmarks have measured LLMs as CTF solvers specifically. <strong>Cybench</strong> [Zhang et al., ICLR 2025 Oral], the most comprehensive evaluation to date, assessed frontier models across 40 professional CTF challenges from platforms including HackTheBox and found that Claude 3.5 Sonnet solved 17.5 percent of challenges without guidance, while GPT-4o reached 29.4 percent with subtask scaffolding. <strong>NYU CTF Bench</strong> [Shao et al., NeurIPS 2024] evaluated models against 200 CSAW CTF challenges and found that GPT-4 scored 300 points in the 2023 qualifier round — a non-trivial performance. Taken together, these results confirm that LLMs can both write exploitable code deliberately and solve the resulting challenges, which means they can plausibly be used as both author and, with appropriate guardrails, tutor in the same system.</p>
+
+<h2>2.5 LLM-Driven Tutoring Systems and Retrieval-Augmented Generation</h2>
+
+<p>The pedagogical case for one-to-one tutoring is among the most replicated findings in educational psychology. Bloom's seminal 1984 study demonstrated that students receiving mastery-based one-to-one tutoring scored approximately two standard deviations higher than students in conventional classroom instruction — a result frequently cited as the "2 Sigma Problem" because no scalable group-instruction method had achieved comparable gains [Bloom, 1984]. VanLehn's 2011 meta-review of three decades of Intelligent Tutoring System research found that well-designed ITS implementations achieve an effect size of approximately d = 0.76 compared with conventional instruction, approaching human-tutor effectiveness (d ≈ 0.79) [VanLehn, 2011]. The prospect of delivering this quality of adaptive support at scale — previously constrained by the cost of human tutors — is a primary motivation for LLM-based tutoring research.</p>
+
+<p>The technical mechanism enabling effective LLM tutoring is <strong>Retrieval-Augmented Generation (RAG)</strong>, introduced by Lewis et al. [NeurIPS 2020], which grounds a language model's responses in a retrieved context document rather than relying solely on parametric knowledge. RAG addresses the hallucination and factual unreliability risks that make unaugmented LLMs unsuitable for safety-critical tutoring, where an incorrect hint about a vulnerability mechanism could mislead the learner. Gao et al. [2024] survey three generations of RAG architecture — naive, advanced, and modular — with modular RAG offering post-retrieval reranking and iterative retrieval that are most suited to the complex multi-step reasoning required to discuss a generated challenge's internals.</p>
+
+<p>The most directly relevant deployment is <strong>CodeHelp</strong> [Liffiton, Sheese, Savelka and Denny, Koli Calling 2023], a guardrailed LLM assistant for introductory programming classes. CodeHelp embeds prompt-level restrictions that prevent the model from revealing complete solutions, redirecting learners toward diagnostic questions instead. In a 12-week classroom deployment with 52 students, 80 percent submitted ten or more queries. The guardrails pattern — injecting the constraint that the model must scaffold reasoning rather than disclose answers — is directly applicable to the challenge-tutor design in this project. Khan Academy's <strong>Khanmigo</strong>, built on GPT-4 with curriculum-grounded retrieval, applies the same Socratic restriction at considerably larger scale across 40-plus US school districts.</p>
+
+<p>A significant risk specific to LLM tutors in the context of a vulnerability platform is <strong>prompt injection</strong>: an adversary (or a curious learner) embedding instructions within a legitimate user query that override the system prompt and cause the model to reveal the flag or vulnerability implementation. The OWASP Top 10 for LLM Applications [OWASP, 2025] lists prompt injection as the leading risk category for LLM-powered applications (LLM01). Wei, Haghtalab and Steinhardt [NeurIPS 2023] identified two structural failure modes — competing objectives and mismatched generalisation — that allow jailbreak attacks to succeed against GPT-4, GPT-3.5 Turbo, and Claude even after safety training. The tutor design must therefore operate with the assumption that some learners will attempt to extract the solution through the chat interface, and must enforce solution confidentiality at the system-prompt level with additional validation at the application layer.</p>
+
+<h2>2.6 Container Security and Ephemeral Sandboxed Environments</h2>
+
+<p>Deploying deliberately vulnerable, user-accessible environments in a multi-tenant setting is a non-trivial security problem. The challenge is that the environment must be vulnerable enough for the learner to exploit it in a controlled exercise, while simultaneously providing guarantees that a successful exploit cannot traverse the container boundary and affect other learners' sessions or the host system. This section reviews the isolation technologies relevant to meeting that requirement.</p>
+
+<p>NIST Special Publication 800-190, <em>Application Container Security Guide</em> [Souppaya, Morello and Scarfone, 2017], provides the authoritative federal framework for container threat modelling. It identifies five threat tiers — image, registry, orchestrator, container runtime, and host OS — and maps mitigations to the NIST Cybersecurity Framework controls. For a deliberately vulnerable environment, the runtime and host OS tiers are most critical: the standard guidance is that containers should not be treated as security boundaries when running attacker-controlled code.</p>
+
+<p>This concern is empirically grounded. Lin et al. [ACSAC 2018] tested 88 real-world exploits against default-configured Docker and found that approximately 57 percent succeeded in achieving privilege escalation or container escape. The most cited container-runtime escape is <strong>CVE-2019-5736</strong> (CVSS 3.1: 8.6 HIGH), in which an attacker with the ability to execute a crafted binary inside a container can overwrite the host runc binary through the <code>/proc/self/exe</code> reference, achieving arbitrary code execution on the host as root. Standard AppArmor profiles on most distributions did not prevent this attack; SELinux in enforcing mode on Red Hat Enterprise Linux did [NVD, 2019]. Sultan, Ahmad and Dimitriou [IEEE Access 2019] survey the canonical four-category container threat model — application-to-container, inter-container, container-to-host, and malicious-host — and identify the combination of seccomp-bpf syscall filtering, Linux capabilities restriction, and mandatory access control as the minimum necessary defence-in-depth for untrusted workloads.</p>
+
+<p>The structural response to these limitations is to raise the isolation boundary from the container runtime to the hypervisor. Three technologies offer this property while retaining operational compatibility with container tooling. <strong>Firecracker</strong> [Agache et al., USENIX NSDI 2020], developed at Amazon Web Services and now powering AWS Lambda and Fargate, is a Rust-implemented minimal virtual machine monitor (VMM) that strips QEMU's device model to virtio-net, virtio-block, and a serial console, and wraps each VMM process in a seccomp-filtered jailer. This architecture achieves <strong>boot times under 125 milliseconds and memory overhead below 5 MiB per microVM</strong>, making it feasible to provision thousands of per-session isolated environments on commodity hardware. <strong>gVisor</strong> [Google, 2018] takes a different approach, re-implementing approximately 211 Linux system calls as a user-space application kernel (the "Sentry") written in memory-safe Go, so that guest system calls never reach the host kernel directly. Young et al. [USENIX HotCloud 2019] measured gVisor's overhead at 2.8× to 232× slower than runc for syscall-heavy workloads, but CPU-bound applications are essentially unaffected — an acceptable trade-off for web-application or scripting challenges. <strong>Kata Containers</strong> wraps each OCI-compatible container or Kubernetes pod in a lightweight VM, supporting Firecracker as a backend while remaining fully compatible with existing Docker and containerd tooling and with Kubernetes Pod scheduling via the containerd shim-v2 interface.</p>
+
+<div class="figure">
+  <svg viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg" font-family="Source Sans 3, sans-serif">
+    <rect width="720" height="200" fill="#f4f6f9" rx="4"/>
+    
+    <!-- Title -->
+    <text x="360" y="20" text-anchor="middle" fill="#2a5c8a" font-size="11" font-weight="600">Isolation Technologies: Security vs. Performance Trade-off</text>
+
+    <!-- Axes -->
+    <line x1="60" y1="160" x2="680" y2="160" stroke="#2a5c8a" stroke-width="1.5"/>
+    <line x1="60" y1="40" x2="60" y2="160" stroke="#2a5c8a" stroke-width="1.5"/>
+    <text x="370" y="185" text-anchor="middle" fill="#5a6a7a" font-size="9.5">← Lower isolation    Isolation strength    Higher isolation →</text>
+    <text x="15" y="100" text-anchor="middle" fill="#5a6a7a" font-size="9.5" transform="rotate(-90,15,100)">Performance</text>
+    <text x="10" y="50" text-anchor="middle" fill="#5a6a7a" font-size="8">High</text>
+    <text x="10" y="155" text-anchor="middle" fill="#5a6a7a" font-size="8">Low</text>
+
+    <!-- Bubbles: runc(fast, weak), gVisor(mid, medium), Kata/FC(mid-slow, strong), KVM(slow, very strong) -->
+    <!-- runc -->
+    <circle cx="130" cy="55" r="22" fill="#c0392b" fill-opacity="0.2" stroke="#c0392b" stroke-width="1.5"/>
+    <text x="130" y="51" text-anchor="middle" fill="#c0392b" font-size="9.5" font-weight="600">runc /</text>
+    <text x="130" y="62" text-anchor="middle" fill="#c0392b" font-size="9.5" font-weight="600">Docker</text>
+    <text x="130" y="86" text-anchor="middle" fill="#5a6a7a" font-size="8">~0ms overhead</text>
+    <text x="130" y="96" text-anchor="middle" fill="#c0392b" font-size="8">⚠ CVE-2019-5736</text>
+
+    <!-- gVisor -->
+    <circle cx="290" cy="80" r="24" fill="#e67e22" fill-opacity="0.2" stroke="#e67e22" stroke-width="1.5"/>
+    <text x="290" y="77" text-anchor="middle" fill="#e67e22" font-size="9.5" font-weight="600">gVisor</text>
+    <text x="290" y="88" text-anchor="middle" fill="#e67e22" font-size="9.5" font-weight="600">(runsc)</text>
+    <text x="290" y="112" text-anchor="middle" fill="#5a6a7a" font-size="8">2.8×–232× overhead</text>
+    <text x="290" y="122" text-anchor="middle" fill="#e67e22" font-size="8">User-space kernel</text>
+
+    <!-- Kata + Firecracker -->
+    <circle cx="470" cy="95" r="28" fill="#2a5c8a" fill-opacity="0.2" stroke="#2a5c8a" stroke-width="2"/>
+    <text x="470" y="88" text-anchor="middle" fill="#2a5c8a" font-size="9.5" font-weight="600">Kata +</text>
+    <text x="470" y="100" text-anchor="middle" fill="#2a5c8a" font-size="9.5" font-weight="600">Firecracker</text>
+    <text x="470" y="132" text-anchor="middle" fill="#5a6a7a" font-size="8">~125ms boot, &lt;5MB/VM</text>
+    <text x="470" y="142" text-anchor="middle" fill="#2a5c8a" font-size="8">VM-grade isolation</text>
+
+    <!-- KVM/Proxmox -->
+    <circle cx="620" cy="125" r="24" fill="#27ae60" fill-opacity="0.2" stroke="#27ae60" stroke-width="1.5"/>
+    <text x="620" y="121" text-anchor="middle" fill="#27ae60" font-size="9.5" font-weight="600">KVM /</text>
+    <text x="620" y="132" text-anchor="middle" fill="#27ae60" font-size="9.5" font-weight="600">Proxmox VE</text>
+    <text x="620" y="156" text-anchor="middle" fill="#5a6a7a" font-size="8">Full VM; ~seconds</text>
+    <text x="620" y="166" text-anchor="middle" fill="#27ae60" font-size="8">Maximum isolation</text>
+
+    <!-- Suitability label -->
+    <rect x="390" y="30" width="155" height="18" fill="#2a5c8a" rx="3"/>
+    <text x="467" y="42" text-anchor="middle" fill="white" font-size="8.5" font-weight="600">Recommended for VulnForge</text>
+    <line x1="470" y1="48" x2="470" y2="67" stroke="#2a5c8a" stroke-width="1" stroke-dasharray="3,2"/>
+  </svg>
+  <p class="fig-caption"><strong>Figure 3.</strong> Isolation technologies relevant to deploying deliberately vulnerable multi-tenant environments, positioned by isolation strength and performance. Docker/runc (red) is fast but vulnerable to container-escape attacks including CVE-2019-5736. gVisor (amber) adds a user-space kernel boundary but imposes significant syscall overhead. Kata Containers on Firecracker (blue) provides VM-grade isolation at sub-125 ms boot times, representing the recommended default for VulnForge. Full KVM/Proxmox VMs (green) are reserved for kernel-level challenge types that require unrestricted kernel access.</p>
+</div>
+
+<p>For a multi-tenant educational platform, network isolation is equally important to process isolation. The standard model — demonstrated by HackTheBox's per-user OpenVPN tunnel approach — provides each learner with a private routed subnet whose reachable hosts are restricted by a gateway firewall to their assigned target machines only. An additional invariant is default-deny egress from the vulnerable container to the public internet, which prevents an exploited service from being used as a pivot point for external attacks or for access to cloud instance metadata services. WireGuard, available in the Linux kernel since version 5.6, offers a modern equivalent to OpenVPN with lower handshake overhead suited to high-churn per-session tenancy. Within a Kubernetes cluster, Cilium's eBPF-based dataplane provides identity-based Layer-3 to Layer-7 network policy enforcement without the overhead of iptables chain traversal [Høiland-Jørgensen et al., ACM CoNEXT 2018].</p>
+
+<h2>2.7 Synthesis: The Unoccupied Intersection</h2>
+
+<p>The three bodies of literature reviewed above have matured independently and, in doing so, have collectively created the conditions for the system this project builds. The CTF and training-platform literature has repeatedly diagnosed static content as the primary structural weakness of hands-on cybersecurity education, and has shown that template-based and library-dependent generation approaches address this weakness only partially and narrowly. The LLM-in-cybersecurity literature has established, through both controlled experiments and large-scale industry benchmarks, that modern code-generating models reliably produce CWE-listed vulnerabilities, can reason about and exploit them at near-human levels, and can be grounded through RAG to serve as context-aware tutors without leaking solutions. The container and microVM security literature has produced production-grade isolation substrates — most prominently Firecracker — that make it safe to run attacker-selected exploit code in multi-tenant settings at the latency and density required for per-session ephemerality.</p>
+
+<p>No existing system — commercial or academic — occupies the intersection of all three. Every platform surveyed in Section 2.2 is architecturally committed to static content. Every prior automated generation system reviewed in Section 2.3 depends on hand-authored artefacts. Every LLM tutoring deployment reviewed in Section 2.5 operates over pre-existing challenges, not ones the model itself created. The present project synthesises these three mature but disjoint fields into a single pipeline: an LLM that generates novel vulnerable code per session, an ephemeral sandboxed container that executes it safely, and a context-aware LLM tutor grounded in exactly what it produced.</p>
+
+<hr style="margin-top:48px; border:none; border-top:1px solid #c8d0d8"/>
+<h2>References</h2>
+<div style="font-family:'Source Sans 3',sans-serif; font-size:9.5pt; line-height:1.7; color:#333; margin-top:16px;">
+<p>[Agache et al., 2020] Agache, A., Brooker, M., Florescu, A., Iordache, A., Liguori, A., Neugebauer, R., Piwonka, P., &amp; Popa, D.-M. (2020). Firecracker: Lightweight Virtualization for Serverless Applications. <em>17th USENIX NSDI</em>, pp. 419–434.</p>
+<p>[Bhatt et al., 2023] Bhatt, M. et al. (2023). Purple Llama CyberSecEval: A Secure Coding Benchmark for Language Models. arXiv:2312.04724.</p>
+<p>[Bhatt et al., 2024] Bhatt, M. et al. (2024). CyberSecEval 2: A Wide-Ranging Cybersecurity Evaluation Suite for Large Language Models. arXiv:2404.13161.</p>
+<p>[BLS, 2024] U.S. Bureau of Labor Statistics. (2024). Occupational Outlook Handbook: Information Security Analysts. U.S. Department of Labor.</p>
+<p>[Bloom, 1984] Bloom, B.S. (1984). The 2 Sigma Problem. <em>Educational Researcher</em>, 13(6), 4–16. DOI: 10.3102/0013189X013006004.</p>
+<p>[Burket et al., 2015] Burket, J., Chapman, P., Becker, T., Ganas, C., &amp; Brumley, D. (2015). Automatic Problem Generation for Capture-the-Flag Competitions. <em>USENIX 3GSE '15</em>.</p>
+<p>[Chapman et al., 2014] Chapman, P., Burket, J., &amp; Brumley, D. (2014). PicoCTF: A Game-Based Computer Security Competition for High School Students. <em>USENIX 3GSE '14</em>.</p>
+<p>[DARPA, 2025] DARPA. (2025). AI Cyber Challenge marks pivotal inflection point for cyber defense. darpa.mil/news/2025/aixcc-results.</p>
+<p>[Deng et al., 2023] Deng, Y., Xia, C.S., Peng, H., Yang, C., &amp; Zhang, L. (2023). Large Language Models Are Zero-Shot Fuzzers. <em>ISSTA 2023</em>. DOI: 10.1145/3597926.3598067.</p>
+<p>[Deng et al., 2024] Deng, G. et al. (2024). PentestGPT: Evaluating and Harnessing Large Language Models for Automated Penetration Testing. <em>33rd USENIX Security Symposium</em>, pp. 847–864.</p>
+<p>[Eckroth et al., 2019] Eckroth, J., Chen, K., Gatewood, H., &amp; Belna, B. (2019). Alpaca: Building Dynamic Cyber Ranges with Procedurally-Generated Vulnerability Lattices. <em>ACM SE '19</em>. DOI: 10.1145/3299815.3314438.</p>
+<p>[Gao et al., 2024] Gao, Y. et al. (2024). Retrieval-Augmented Generation for Large Language Models: A Survey. arXiv:2312.10997.</p>
+<p>[Høiland-Jørgensen et al., 2018] Høiland-Jørgensen, T. et al. (2018). The eXpress Data Path. <em>ACM CoNEXT '18</em>. DOI: 10.1145/3281411.3281443.</p>
+<p>[Hulin et al., 2017] Hulin, P. et al. (2017). AutoCTF: Creating Diverse Pwnables via Automated Bug Injection. <em>USENIX WOOT '17</em>.</p>
+<p>[ISC2, 2024] ISC2. (2024). 2024 ISC2 Cybersecurity Workforce Study. isc2.org/Insights/2024/10/ISC2-2024-Cybersecurity-Workforce-Study.</p>
+<p>[Lewis et al., 2020] Lewis, P. et al. (2020). Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks. <em>NeurIPS 2020</em>. arXiv:2005.11401.</p>
+<p>[Liffiton et al., 2023] Liffiton, M., Sheese, B.E., Savelka, J., &amp; Denny, P. (2023). CodeHelp: Using Large Language Models with Guardrails for Scalable Support in Programming Classes. <em>Koli Calling '23</em>. DOI: 10.1145/3631802.3631830.</p>
+<p>[Lin et al., 2018] Lin, X. et al. (2018). A Measurement Study on Linux Container Security. <em>ACSAC '18</em>. DOI: 10.1145/3274694.3274720.</p>
+<p>[NVD, 2019] NIST National Vulnerability Database. (2019). CVE-2019-5736. nvd.nist.gov/vuln/detail/CVE-2019-5736.</p>
+<p>[OWASP, 2025] OWASP GenAI Security Project. (2025). OWASP Top 10 for LLM Applications v2.0. genai.owasp.org.</p>
+<p>[Pearce et al., 2022] Pearce, H., Ahmad, B., Tan, B., Dolan-Gavitt, B., &amp; Karri, R. (2022). Asleep at the Keyboard? <em>IEEE S&amp;P 2022</em>. DOI: 10.1109/SP46214.2022.9833571.</p>
+<p>[Perry et al., 2023] Perry, N., Srivastava, M., Kumar, D., &amp; Boneh, D. (2023). Do Users Write More Insecure Code with AI Assistants? <em>ACM CCS 2023</em>. DOI: 10.1145/3576915.3623157.</p>
+<p>[Rodriguez et al., 2025] Rodriguez, A.M. et al. (2025). AgentCyTE: Leveraging Agentic AI to Generate Cybersecurity Training &amp; Experimentation Scenarios. arXiv:2510.25189.</p>
+<p>[Schreuders et al., 2017] Schreuders, Z.C. et al. (2017). Security Scenario Generator (SecGen). <em>USENIX ASE '17</em>.</p>
+<p>[Shao et al., 2024] Shao, M. et al. (2024). NYU CTF Bench. <em>NeurIPS 2024 D&amp;B Track</em>. arXiv:2406.05590.</p>
+<p>[Souppaya et al., 2017] Souppaya, M., Morello, J., &amp; Scarfone, K. (2017). Application Container Security Guide. NIST SP 800-190. DOI: 10.6028/NIST.SP.800-190.</p>
+<p>[Sultan et al., 2019] Sultan, S., Ahmad, I., &amp; Dimitriou, T. (2019). Container Security: Issues, Challenges, and the Road Ahead. <em>IEEE Access</em>, 7, 52976–52996. DOI: 10.1109/ACCESS.2019.2911732.</p>
+<p>[Švábenský et al., 2020] Švábenský, V., Vykopal, J., &amp; Čeleda, P. (2020). What Are Cybersecurity Education Papers About? <em>SIGCSE '20</em>. DOI: 10.1145/3328778.3366816.</p>
+<p>[Švábenský et al., 2021] Švábenský, V., Čeleda, P., Vykopal, J., &amp; Brišáková, S. (2021). Cybersecurity Knowledge and Skills Taught in Capture the Flag Challenges. <em>Computers &amp; Security</em>, 102, 102154. DOI: 10.1016/j.cose.2020.102154.</p>
+<p>[VanLehn, 2011] VanLehn, K. (2011). The Relative Effectiveness of Human Tutoring, Intelligent Tutoring Systems, and Other Tutoring Systems. <em>Educational Psychologist</em>, 46(4), 197–221. DOI: 10.1080/00461520.2011.611369.</p>
+<p>[Vykopal et al., 2020] Vykopal, J., Švábenský, V., &amp; Chang, E.-C. (2020). Benefits and Pitfalls of Using Capture the Flag Games in University Courses. <em>SIGCSE '20</em>. DOI: 10.1145/3328778.3366893.</p>
+<p>[Wei et al., 2023] Wei, A., Haghtalab, N., &amp; Steinhardt, J. (2023). Jailbroken: How Does LLM Safety Training Fail? <em>NeurIPS 2023</em>. arXiv:2307.02483.</p>
+<p>[Young et al., 2019] Young, E.G. et al. (2019). The True Cost of Containing: A gVisor Case Study. <em>USENIX HotCloud '19</em>.</p>
+<p>[Zhang et al., 2025] Zhang, A.K. et al. (2025). Cybench: A Framework for Evaluating Cybersecurity Capabilities and Risks of Language Models. <em>ICLR 2025 (Oral)</em>. arXiv:2408.08926.</p>
+</div>
+
+</div>
+</body>
+</html>
