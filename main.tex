@@ -1,3 +1,4 @@
+% !TeX program = lualatex
 % =============================================================================
 % Template dissertation using the qdissertation class
 % =============================================================================
@@ -188,6 +189,18 @@
     keepspaces=true
 }
 
+% Format coding
+\usepackage[newfloat]{minted}
+\setminted{
+    breaklines=true,
+    breakanywhere=true,
+    breaksymbolleft={},
+    breaksymbolright={},
+    autogobble=true,
+    fontsize=\small,
+    fontfamily=tt
+}
+
 
 % Other useful packages
 \usepackage{lipsum}          % Placeholder text: \lipsum[n], \lipsum[1-5], etc.
@@ -217,6 +230,7 @@
 %   \setmonofont{Source Code Pro}[Scale=MatchLowercase,Ligatures=TeX]%
 % }%
 % \setmathfont{texgyretermes-math.otf}[Scale=MatchLowercase]
+\setmonofont{Iosevka Nerd Font Mono}[Scale=MatchLowercase]
 
 \usepackage{titlesec}
 \titleformat{\subsubsection}[runin]{\normalfont\bfseries}{\thesubsubsection}{1em}{}

@@ -392,7 +392,187 @@ The project was built with TypeScript and React for the web application, Drizzle
 
 Drizzle runs migrations automatically when the database is created, with SQLite being configured in WAL mode (write-ahead logging) to allow the application to perform concurrent reads and writes during actions that may have a lock on the database such as launching of challenges, or chat persistence.
 
+\subsection{Authentication, settings and user state}\label{sec:auth-settings}
 
+Authentication is implemented with email and password combination. Passwords are hashed with bcrypt before being stored. A successful login creates a row in the sessions table, and sets a HTTP only session cookie named \lstinline{session_token}. The cookie has a seven day expiration. API routes that require you to be logged in run \lstinline{requireAuth()} which reads the cookie from the user, check the session exists in the database and has not expired, and once these are validated, it loads the corresponding users data. 
+
+The settings route allows the user to update their public SSH key, and password. SSH keys are validated with regular expression that accepts common SSH key types such as \lstinline{ssh-ed25519} and \lstinline{ssh-rsa}, \lstinline{ECDSA} and security key backed \lstinline{ed25519}. 
+The launch route refuses to provision a new challenge if the authenticated user does not have an associated SSH key, ensuring key configuration is at the start of the workflow, displaying a message to the user saying they need to set it, this also prevents any LLM calls or container creation as we do not want extra resource usage if the user is unable to connect to the container. 
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[
+        width=\linewidth,
+        height=0.82\textheight,
+        keepaspectratio
+    ]{images/required-ssh-key-config.png}
+    \caption{User requires an SSH key before starting a challenge}
+    \label{fig:ssh-key-required}
+\end{figure}
+
+\subsection{Database respositories and status transactions}\label{sec:database-reponsitories}
+
+We have a data access layer that wraps access to any database related actions for users, sessions, challenges and messages. This prevents API routes from containing raw SQL and allows the application to have a single point to enforce domain specific behavior. Each table has its own associated respository which houses it's specific functions.
+
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[
+        width=\linewidth,
+        height=0.82\textheight,
+        keepaspectratio
+    ]{images/db-repositories.png}
+    \caption{Each tables database repository}
+    \label{fig:db-repositories}
+\end{figure}
+
+The challenge repository creates new challenges with \lstinline{status = 'active'}, an expiry time that is one hour after creation, and a \lstinline{completed_at} timestamp. It provides methods for finding the active challenge for a user, retrieving all challenges for history, finding prior challenges from a specific category to ensure the new challenges are diverse, finding expired challenges, and transitioning a challenge from active to expired.
+
+To enforce the rule that one user can only have one challenge we do:
+
+\begin{enumerate}
+    \item The launch route checks for an existing active challenge 
+    \item The launch route re-checks before inserting into the database after we have generated a vulnerability and provisioned the machine
+    \item The database has a partial unique index on active challenges for users
+\end{enumerate}
+
+The partial unique index is seen as the most important as it handles race conditions that the application may struggle to prevent. 
+
+
+\subsection{OpenRouter implementation}\label{sec:openrouter-implementation}
+
+To generate a vulnerability for a machine, the entry-point is the \lstinline{generateVulnerability()} method inside \lstinline{app/lib/openrouter.ts}. To do so, it performs the following steps:
+\begin{enumerate}
+    \item Generate a random flag, stored server side 
+    \item Build a category specific prompt based on what the user has selected, the difficulty, the random variant and theme (based on the users history) - this is classed as the user prompt
+    \item Convert the Zod internal schema into a JSON schema that the LLM can adhere to 
+    \item Send the system prompt, alongside the user propmt to OpenRouter with the structured response format 
+    \item Parse the returned text as JSON 
+    \item Validate it against the internal \lstinline{VulnerabilitySpecSchema}
+    \item Run semantic validation
+\end{enumerate}
+
+\begin{center}
+\begin{minipage}{\linewidth}
+\captionsetup{type=listing,hypcap=false}
+\caption{\texttt{VulnerabilitySpecSchema} that the LLM should adhere to}
+\label{code:VulnerabilitySpecSchema}
+\end{minipage}
+\end{center}
+\begin{minted}{TypeScript}
+    export const ValidationSpecSchema = z.object({
+  health_checks: z.array(ValidationCommandSchema).min(1),
+  flag_protection_checks: z.array(ValidationCommandSchema).min(1),
+  exploit_checks: z.array(ValidationCommandSchema).min(1),
+});
+
+/**
+ * The complete vulnerability specification returned by OpenRouter
+ * We view it as the contract between the LLM and the injection pipeline
+ */
+export const VulnerabilitySpecSchema = z.object({
+  title: z
+    .string()
+    .describe(
+      "A short, human-readable title for this vulnerability scenario, e.g. 'Nginx Path Traversal via Misconfigured Alias'"
+    ),
+  description: z
+    .string()
+    .describe(
+      "A 2-4 sentence description of the vulnerability, what it is, and why it is dangerous. This will be shown to the user as their briefing."
+    ),
+  category: z
+    .string()
+    .describe(
+      "The vulnerability category, e.g. web_server_misconfiguration, privilege_escalation, sql_injection"
+    ),
+  difficulty: z
+    .enum(["beginner", "intermediate", "advanced"])
+    .describe("The intended difficulty level of this challenge"),
+  hint: z
+    .string()
+    .describe(
+      "A single cryptic hint that nudges the user toward the attack vector without revealing the solution"
+    ),
+  apt_packages: z
+    .array(AptPackageSchema)
+    .describe(
+      "List of apt packages that must be installed for the vulnerable service to function"
+    ),
+  files: z
+    .array(FileEntrySchema)
+    .min(1)
+    .describe(
+      "The files to write into the container. Must include all configuration, application code, and the flag file."
+    ),
+  services: z
+    .array(ServiceSchema)
+    .describe(
+      "Systemd services to restart or enable after files are injected"
+    ),
+  setup_commands: z
+    .array(z.string())
+    .default([])
+    .describe(
+      "Optional shell commands to run inside the container after file injection and service restart, for any setup that cannot be expressed as files (e.g. creating database tables, adding system users). Each command is run as root via pct exec."
+    ),
+  solution_summary: z
+    .string()
+    .describe(
+      "A concise explanation of how to exploit this vulnerability and retrieve the flag. This is stored server-side and NEVER shown to the user; it is used by the tutor LLM to provide contextual hints."
+    ),
+  attack_vector: z
+    .string()
+    .describe(
+      "The MITRE ATT&CK technique or CWE identifier most relevant to this vulnerability, e.g. CWE-22 (Path Traversal) or T1059 (Command and Scripting Interpreter)"
+    ),
+  validation: ValidationSpecSchema.describe(
+    "Private server-side validation commands used to verify the challenge before presentation and during evaluation. Must include at least one health check, one flag-protection check, and one exploit check. Never shown to the student."
+  ),
+});
+\end{minted}
+
+\subsection{Prompt catalogue and diversity implementation}\label{sec:prompt-catalogue}
+
+Initially, to generate a vulnerability, we had just one prompt file, but as we expanded the variation of vulnerabilities, we realised that this needed to be segmented more, so it developed into a catalogue of category modules that are selected based on the users selection. Currently we support the following categories:
+
+\begin{enumerate}
+    \item Web Server Misconfiguration
+    \item Privilege Escalation
+    \item SQL Injection
+    \item Insecure File Permissions
+    \item Web Application Logic Flaws
+\end{enumerate}
+
+Each category has a user facing label and description of what it entails, then behind the scenes, there is a list of variants, and themes (where supported) and a prompt template. The prompt builder chooses a random variant, and for web categories, it chosses a random theme. This helps ensure that two identical requests for the same vulnerability and difficulty should not produce the same style of vulnerability. 
+
+The prompt builder is also able to query previous challenges for the user to ensure they do not get the same category. It goes through the recent titles and solution summaries, and passes them into the prompt as part of an exclusion list, which the LLM is instructured not to use so a user would not get the same vulnerability and scenario twice. The evaluation harness which runs after the vulnerability is created measures the diversity in a more concrete way, using generated titlesl, attack vectors and file hashes to further ensure that the vulnerability is different. 
+
+\subsection{Container deployment}\label{sec:container-deployment}
+ 
+Container deployment is implemented through the \lstinline{deploy.yml} playbook and the \lstinline{lxc_lifecycle.yml} role. The playbook creates an Ubuntu 24.04 unprivileged LXC container with one core, 1024 MB of memory, 8 GB root filesystem, DHCP on the \lstinline{vmbr0} interface and the \lstinline{vulnforge} tag inside Proxmox. It then starts the container, creates the \lstinline{student} user, injects the user's SSH key, waits to be assinged an IP address, then writes to a deployment artefact that containers the VMID, hostname, IP address and configuration details. 
+
+
+\begin{center}
+\begin{minipage}{\linewidth}
+\captionsetup{type=listing,hypcap=false}
+\caption{\texttt{Deployment Artefact}}
+\label{code:deployment-artefact}
+\end{minipage}
+\end{center}
+\begin{minted}{JSON}
+{
+    "cores": 1,
+    "created_at": "2026-04-16T14:43:24.435859",
+    "hostname": "lab-1776346995",
+    "ip": "192.168.0.81",
+    "memory": 1024,
+    "net0": "name=eth0,bridge=vmbr0,ip=dhcp",
+    "rootfs": "local-lvm:8",
+    "template_file": "ubuntu-24.04-standard_24.04-2_amd64.tar.zst",
+    "vmid": "112"
+}
+\end{minted}
 
 \section{Summary}\label{sec:summary}
-% Optional: short summary of the methodology. Omit if the chapter is already concise.
+% Optional: short summary of the methodology. Omit if the chapter is already conciseq

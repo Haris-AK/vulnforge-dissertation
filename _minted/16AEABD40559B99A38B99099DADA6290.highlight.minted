@@ -1,0 +1,72 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{+w}{    }\PYG{k}{export}\PYG{+w}{ }\PYG{k+kd}{const}\PYG{+w}{ }\PYG{n+nx}{ValidationSpecSchema}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n+nx}{z}\PYG{p}{.}\PYG{n+nx}{object}\PYG{p}{(\PYGZob{}}
+\PYG{+w}{  }\PYG{n+nx}{health\PYGZus{}checks}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z.array}\PYG{p}{(}\PYG{n+nx}{ValidationCommandSchema}\PYG{p}{).}\PYG{n+nx}{min}\PYG{p}{(}\PYG{l+m+mf}{1}\PYG{p}{),}
+\PYG{+w}{  }\PYG{n+nx}{flag\PYGZus{}protection\PYGZus{}checks}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z.array}\PYG{p}{(}\PYG{n+nx}{ValidationCommandSchema}\PYG{p}{).}\PYG{n+nx}{min}\PYG{p}{(}\PYG{l+m+mf}{1}\PYG{p}{),}
+\PYG{+w}{  }\PYG{n+nx}{exploit\PYGZus{}checks}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z.array}\PYG{p}{(}\PYG{n+nx}{ValidationCommandSchema}\PYG{p}{).}\PYG{n+nx}{min}\PYG{p}{(}\PYG{l+m+mf}{1}\PYG{p}{),}
+\PYG{p}{\PYGZcb{});}
+
+\PYG{c+cm}{/**}
+\PYG{c+cm}{ * The complete vulnerability specification returned by OpenRouter}
+\PYG{c+cm}{ * We view it as the contract between the LLM and the injection pipeline}
+\PYG{c+cm}{ */}
+\PYG{k}{export}\PYG{+w}{ }\PYG{k+kd}{const}\PYG{+w}{ }\PYG{n+nx}{VulnerabilitySpecSchema}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n+nx}{z}\PYG{p}{.}\PYG{n+nx}{object}\PYG{p}{(\PYGZob{}}
+\PYG{+w}{  }\PYG{n+nx}{title}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z}
+\PYG{+w}{    }\PYG{p}{.}\PYG{k+kt}{string}\PYG{p}{()}
+\PYG{+w}{    }\PYG{p}{.}\PYG{n+nx}{describe}\PYG{p}{(}
+\PYG{+w}{      }\PYG{l+s+s2}{\PYGZdq{}A short, human\PYGZhy{}readable title for this vulnerability scenario, e.g. \PYGZsq{}Nginx Path Traversal via Misconfigured Alias\PYGZsq{}\PYGZdq{}}
+\PYG{+w}{    }\PYG{p}{),}
+\PYG{+w}{  }\PYG{n+nx}{description}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z}
+\PYG{+w}{    }\PYG{p}{.}\PYG{k+kt}{string}\PYG{p}{()}
+\PYG{+w}{    }\PYG{p}{.}\PYG{n+nx}{describe}\PYG{p}{(}
+\PYG{+w}{      }\PYG{l+s+s2}{\PYGZdq{}A 2\PYGZhy{}4 sentence description of the vulnerability, what it is, and why it is dangerous. This will be shown to the user as their briefing.\PYGZdq{}}
+\PYG{+w}{    }\PYG{p}{),}
+\PYG{+w}{  }\PYG{n+nx}{category}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z}
+\PYG{+w}{    }\PYG{p}{.}\PYG{k+kt}{string}\PYG{p}{()}
+\PYG{+w}{    }\PYG{p}{.}\PYG{n+nx}{describe}\PYG{p}{(}
+\PYG{+w}{      }\PYG{l+s+s2}{\PYGZdq{}The vulnerability category, e.g. web\PYGZus{}server\PYGZus{}misconfiguration, privilege\PYGZus{}escalation, sql\PYGZus{}injection\PYGZdq{}}
+\PYG{+w}{    }\PYG{p}{),}
+\PYG{+w}{  }\PYG{n+nx}{difficulty}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z}
+\PYG{+w}{    }\PYG{p}{.}\PYG{k+kd}{enum}\PYG{p}{([}\PYG{l+s+s2}{\PYGZdq{}beginner\PYGZdq{}}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}intermediate\PYGZdq{}}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}advanced\PYGZdq{}}\PYG{p}{])}
+\PYG{+w}{    }\PYG{p}{.}\PYG{n+nx}{describe}\PYG{p}{(}\PYG{l+s+s2}{\PYGZdq{}The intended difficulty level of this challenge\PYGZdq{}}\PYG{p}{),}
+\PYG{+w}{  }\PYG{n+nx}{hint}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z}
+\PYG{+w}{    }\PYG{p}{.}\PYG{k+kt}{string}\PYG{p}{()}
+\PYG{+w}{    }\PYG{p}{.}\PYG{n+nx}{describe}\PYG{p}{(}
+\PYG{+w}{      }\PYG{l+s+s2}{\PYGZdq{}A single cryptic hint that nudges the user toward the attack vector without revealing the solution\PYGZdq{}}
+\PYG{+w}{    }\PYG{p}{),}
+\PYG{+w}{  }\PYG{n+nx}{apt\PYGZus{}packages}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z}
+\PYG{+w}{    }\PYG{p}{.}\PYG{n+nx}{array}\PYG{p}{(}\PYG{n+nx}{AptPackageSchema}\PYG{p}{)}
+\PYG{+w}{    }\PYG{p}{.}\PYG{n+nx}{describe}\PYG{p}{(}
+\PYG{+w}{      }\PYG{l+s+s2}{\PYGZdq{}List of apt packages that must be installed for the vulnerable service to function\PYGZdq{}}
+\PYG{+w}{    }\PYG{p}{),}
+\PYG{+w}{  }\PYG{n+nx}{files}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z}
+\PYG{+w}{    }\PYG{p}{.}\PYG{n+nx}{array}\PYG{p}{(}\PYG{n+nx}{FileEntrySchema}\PYG{p}{)}
+\PYG{+w}{    }\PYG{p}{.}\PYG{n+nx}{min}\PYG{p}{(}\PYG{l+m+mf}{1}\PYG{p}{)}
+\PYG{+w}{    }\PYG{p}{.}\PYG{n+nx}{describe}\PYG{p}{(}
+\PYG{+w}{      }\PYG{l+s+s2}{\PYGZdq{}The files to write into the container. Must include all configuration, application code, and the flag file.\PYGZdq{}}
+\PYG{+w}{    }\PYG{p}{),}
+\PYG{+w}{  }\PYG{n+nx}{services}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z}
+\PYG{+w}{    }\PYG{p}{.}\PYG{n+nx}{array}\PYG{p}{(}\PYG{n+nx}{ServiceSchema}\PYG{p}{)}
+\PYG{+w}{    }\PYG{p}{.}\PYG{n+nx}{describe}\PYG{p}{(}
+\PYG{+w}{      }\PYG{l+s+s2}{\PYGZdq{}Systemd services to restart or enable after files are injected\PYGZdq{}}
+\PYG{+w}{    }\PYG{p}{),}
+\PYG{+w}{  }\PYG{n+nx}{setup\PYGZus{}commands}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z}
+\PYG{+w}{    }\PYG{p}{.}\PYG{n+nx}{array}\PYG{p}{(}\PYG{n+nx}{z}\PYG{p}{.}\PYG{k+kt}{string}\PYG{p}{())}
+\PYG{+w}{    }\PYG{p}{.}\PYG{k}{default}\PYG{p}{([])}
+\PYG{+w}{    }\PYG{p}{.}\PYG{n+nx}{describe}\PYG{p}{(}
+\PYG{+w}{      }\PYG{l+s+s2}{\PYGZdq{}Optional shell commands to run inside the container after file injection and service restart, for any setup that cannot be expressed as files (e.g. creating database tables, adding system users). Each command is run as root via pct exec.\PYGZdq{}}
+\PYG{+w}{    }\PYG{p}{),}
+\PYG{+w}{  }\PYG{n+nx}{solution\PYGZus{}summary}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z}
+\PYG{+w}{    }\PYG{p}{.}\PYG{k+kt}{string}\PYG{p}{()}
+\PYG{+w}{    }\PYG{p}{.}\PYG{n+nx}{describe}\PYG{p}{(}
+\PYG{+w}{      }\PYG{l+s+s2}{\PYGZdq{}A concise explanation of how to exploit this vulnerability and retrieve the flag. This is stored server\PYGZhy{}side and NEVER shown to the user; it is used by the tutor LLM to provide contextual hints.\PYGZdq{}}
+\PYG{+w}{    }\PYG{p}{),}
+\PYG{+w}{  }\PYG{n+nx}{attack\PYGZus{}vector}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z}
+\PYG{+w}{    }\PYG{p}{.}\PYG{k+kt}{string}\PYG{p}{()}
+\PYG{+w}{    }\PYG{p}{.}\PYG{n+nx}{describe}\PYG{p}{(}
+\PYG{+w}{      }\PYG{l+s+s2}{\PYGZdq{}The MITRE ATT\PYGZam{}CK technique or CWE identifier most relevant to this vulnerability, e.g. CWE\PYGZhy{}22 (Path Traversal) or T1059 (Command and Scripting Interpreter)\PYGZdq{}}
+\PYG{+w}{    }\PYG{p}{),}
+\PYG{+w}{  }\PYG{n+nx}{validation}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{ValidationSpecSchema.describe}\PYG{p}{(}
+\PYG{+w}{    }\PYG{l+s+s2}{\PYGZdq{}Private server\PYGZhy{}side validation commands used to verify the challenge before presentation and during evaluation. Must include at least one health check, one flag\PYGZhy{}protection check, and one exploit check. Never shown to the student.\PYGZdq{}}
+\PYG{+w}{  }\PYG{p}{),}
+\PYG{p}{\PYGZcb{});}
+\end{MintedVerbatim}
