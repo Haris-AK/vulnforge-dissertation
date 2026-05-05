@@ -1,578 +1,422 @@
 % =============================================================================
-% CHAPTER 3: Methodology (or ``Specification, Design and Implementation'' / ``Approach'')
+% CHAPTER 3: Specification, Design and Implementation
 % =============================================================================
 % SPDX-FileCopyrightText: 2026 Frank Langbein <frank@langbein.org>
 % SPDX-License-Identifier: LPPL-1.3c
-%
-% This chapter describes how your solution works. Title it Methodology, Approach,
-% or Specification, Design and Implementation; adapt or split as needed. Not all
-% sections below apply to every project---pick, omit, or rename.
-%
-% Suggested sections by project type:
-%   System design:  Specification, System design, Implementation. Optional: Datasets
-%                   if data is central; Ethical considerations.
-%   Research:       Research design, Literature and evidence (search strategy,
-%                   inclusion criteria), Specification (= problem + requirements),
-%                   Approach and solution, Implementation or experimental setup.
-%   AI/ML:          Specification, Datasets, AI/ML models, System design (if a
-%                   larger system), Implementation. Optional: Research design,
-%                   Literature and evidence; Summary.
 % =============================================================================
 
-\section{Specification}\label{sec:spec}
-% System design: requirements (what the system must do; optional subsections: functional, non-functional). Research: problem and what is required of a solution.
+This chapter describes how VulnForge was designed, and implemented. The specification states what the system is required to do and the constraints that shaped the solution. The design then explains the main architectural decisions and the viewpoints needed to understand the platform: architecture, data model, challenge lifecycle, generation, verification, tutoring, and history. The implementation section describes how the most important design ideas were realised in the codebase, focusing on the parts that are critical to the system or that caused notable implementation problems.
 
-VulnForge has to solve three key connected problems. Firstly, it must provide a usable web interface that allows users to create an account, store an SSH public key, choose a vulnerability category, and launch a challenge. Secondly, it must safely orchestrate infrastructure code: create an isolated container, inject the user's SSH key, apply an LLM generated vulnerability specification, and then clean up after usage. Thirdly, it must integrate a generative AI tutor in a constrained way so that the LLM produces useful challenge context, without exposing the answer directly. 
+\section{Specification}\label{sec:spec}
+
+VulnForge has to solve three connected problems. First, it must provide a usable web interface where learners can create an account, store an SSH public key, choose a vulnerability category and difficulty, launch a challenge, submit a flag, and review previous attempts. Secondly, it must safely orchestrate infrastructure: create an isolated container, inject the learner's SSH key, apply an LLM-generated vulnerability specification, verify the result, and clean up afterwards. Thirdly, it must use generative AI in a constrained way so that an LLM can help create and tutor a challenge without being allowed to control the host directly or reveal the answer to the learner.
 
 \subsection{Scope and assumptions}\label{sec:scope}
 
-The system is designed as a controlled environment for educational use, not for public scale internet usage. A user interacts with a web dashboard with their challenge machine through SSH (or a web-interface when appropriate for the challenge). The vulnerable environment will be a Ubuntu 24.04 LXC container hosted on a Proxmox VE hypervisor. The container is intended to be ephemeral, to be destroyed either after a time expiration, the challenge is completed or if it is manually deleted.  
+The system is designed for a controlled educational lab setting rather than for public Internet-scale deployment. A user interacts with VulnForge through a web dashboard and connects to the generated challenge environment through SSH. Each challenge environment is an Ubuntu 24.04 LXC container hosted on a Proxmox VE hypervisor. The container is intended to be ephemeral: it exists for one challenge attempt and is later destroyed because the challenge expires, is completed, or is manually ended.
 
-The main operating assumptions are the following:
+The main operating assumptions are:
 \begin{itemize}
-    \item Users authenticate through the web application before starting a challenge
-    \item Each user stores a SSH public key in their account settings before starting a challenge
-    \item Students connect to a challnege as a non-root Linux user called `student`
-    \item The `student` user has no default sudo access, any privilege escalation must be gained through the generated vulnerability
-    \item Each user must have at most one challenge active at any time
-    \item The platform stores the flag server side, and does not send it to the user
-    \item The vulnerable container is reachable only through the intended lab path
+	\item users authenticate through the VulnForge web application before launching challenges;
+	\item each user stores an SSH public key in account settings before launching a challenge;
+	\item learners connect to the challenge as a non-root Linux user called \lstinline|student|;
+	\item the \lstinline|student| user has no normal administrative access, so any privilege gain must come from the generated vulnerability;
+	\item each user may have at most one active challenge at a time;
+	\item the platform stores the flag and solution summary server-side and does not expose them to the browser while the challenge is active;
+	\item the vulnerable container is reachable through the intended lab network path, but the web application does not implement a full public VPN or network onboarding product.
 \end{itemize}
 
-It is important to define these assumptions as they restrict scope, we are not trying to provide multi-tenant access with features like payment, global scaling or web based terminals. The core purpose is to demonstrate that controlled generation, deployment and guidance of vulnerable machines.
+These assumptions restrict the project scope. VulnForge does not attempt to implement payment, public cloud scaling, browser-based terminals, end-user Proxmox administration, or a complete managed VPN. The core purpose is to demonstrate controlled generation, deployment, verification, guided assistance, flag submission, and cleanup for short-lived vulnerable machines.
 
 \subsection{Functional requirements}\label{sec:functional_requirements}
 
-
 \begin{longtable}{|p{0.10\textwidth}|p{0.40\textwidth}|p{0.43\textwidth}|}
-\caption{Functional requirements and corresponding design responses}
-\label{tab:functional-requirements-long}\\
+	\caption{Functional requirements and corresponding design responses}
+	\label{tab:functional-requirements-long}                                                                                                                                                                                                                                    \\
+	\hline
+	\textbf{ID} & \textbf{Requirement}                                                                            & \textbf{Final design response}                                                                                                                              \\
+	\hline
+	\endfirsthead
+	\hline
+	\textbf{ID} & \textbf{Requirement}                                                                            & \textbf{Final design response}                                                                                                                              \\
+	\hline
+	\endhead
+	\hline
+	\multicolumn{3}{|r|}{\emph{Continued on next page}}                                                                                                                                                                                                                         \\
+	\hline
+	\endfoot
+	\hline
+	\endlastfoot
 
-\hline
-\textbf{ID} & \textbf{Requirement} & \textbf{Design Response} \\
-\hline
-\endfirsthead
-
-\hline
-\textbf{ID} & \textbf{Requirement} & \textbf{Design response} \\
-\hline
-\endhead
-
-\hline
-\multicolumn{3}{|r|}{\emph{Continued on next page}} \\
-\hline
-\endfoot
-
-\hline
-\endlastfoot
-
-FR1 &
-Users must be able to sign up, log in, log out, and remain authenticated across page refreshes. &
-The application implements email/password authentication, password hashing, HTTP-only session cookies, and a sessions table. \\
-\hline
-
-FR2 &
-Users must be able to store and update an SSH public key. &
-The system validates public key format and stores the key against the authenticated user. \\
-\hline
-
-FR3 &
-Users must be able to select a challenge type and difficulty. &
-The dashboard exposes categories and difficulty levels for the user to choose from. \\
-\hline
-
-FR4 &
-The system must dynamically generate a vulnerability specification. &
-The LLM builds a category-specific prompt, includes the selected difficulty, and requests structured JSON that is validated. \\
-\hline
-
-FR5 &
-The system must provision a fresh vulnerable environment. &
-The launch API invokes Ansible to create an unprivileged Ubuntu LXC container on Proxmox. \\
-\hline
-
-FR6 &
-The system must inject user access credentials into the container. &
-The system creates a student user and pushes the user's SSH public key into \lstinline|/home/student/.ssh/authorized_keys|. \\
-\hline
-
-FR7 &
-The system must inject the generated vulnerable content. &
-The injection system installs required packages, pushes generated files into the container, runs setup commands, and restarts services. \\
-\hline
-
-FR8 &
-The user must receive enough information to access the challenge. &
-The active challenge response includes VMID, hostname, IP address, SSH user, and a ready to copy SSH command (\lstinline|ssh student@<ip>|). \\
-\hline
-
-FR9 &
-The user must be able to submit a flag and receive feedback. &
-The flag submission route verifies ownership, status, expiry, and flag value before marking the challenge completed. \\
-\hline
-
-FR10 &
-The system must prevent indefinite resource use. &
-Challenges have a TTL, application-side expiry checks, and a Proxmox-side cronjob. \\
-\hline
-
-FR11 &
-The user must be able to end a challenge manually. &
-The challenge panel exposes a destroy action that transitions the challenge to destroyed and invokes container destruction. \\
-\hline
-
-FR12 &
-The AI tutor must provide challenge-aware guidance. &
-The chat builds a tutor prompt from the stored challenge metadata and solution summary, while blocking direct answer leakage. \\
-\hline
-
-FR13 &
-Users should be able to review previous work. &
-The history page lists past challenges, statuses, metadata, and saved tutor messages; completed challenges can reveal the solution summary for learning. \\
-\hline
-
+	FR1         & Users must be able to sign up, log in, log out, and remain authenticated across page refreshes. & The application implements email/password authentication, bcrypt password hashing, HTTP-only session cookies, and a \lstinline|sessions| table.             \\
+	\hline
+	FR2         & Users must be able to store and update an SSH public key.                                       & The settings route validates the public key format and stores it against the authenticated user.                                                            \\
+	\hline
+	FR3         & Users must be able to select a vulnerability category and difficulty.                           & The dashboard exposes challenge categories and three difficulty levels: beginner, intermediate, and advanced.                                               \\
+	\hline
+	FR4         & The system must dynamically generate a vulnerability scenario.                                  & The generation module builds a category-specific prompt, requests structured JSON from OpenRouter, and validates the result with Zod and policy checks.     \\
+	\hline
+	FR5         & The system must provision a fresh vulnerable environment.                                       & The launch route invokes Ansible to create an unprivileged Ubuntu LXC container through Proxmox.                                                            \\
+	\hline
+	FR6         & The system must inject user access credentials into the environment.                            & The lifecycle role creates the \lstinline|student| account and pushes the user's SSH public key to \lstinline|/home/student/.ssh/authorized_keys|.          \\
+	\hline
+	FR7         & The system must inject generated vulnerable content.                                            & The injection playbook installs packages, writes generated files, applies ownership and modes, runs setup commands, and restarts services.                  \\
+	\hline
+	FR8         & The system must verify basic challenge health before the user sees it.                          & After injection, the launch pipeline runs generated health and flag-protection checks through the verification runner.                                      \\
+	\hline
+	FR9         & The user must receive enough information to access the challenge.                               & The active challenge response includes the VMID, IP address, hostname, SSH user, and a ready-to-copy \lstinline|ssh student@<ip>| command.                  \\
+	\hline
+	FR10        & The user must be able to submit a flag and receive feedback.                                    & The flag submission route checks ownership, status, expiry, and flag equality before marking a correct challenge as completed.                              \\
+	\hline
+	FR11        & The system must prevent indefinite resource use.                                                & Challenges have a one-hour application TTL and a Proxmox-side reaper for containers tagged \lstinline|vulnforge|.                                           \\
+	\hline
+	FR12        & The user must be able to end a challenge manually.                                              & The challenge API marks the challenge as destroyed and triggers container deletion.                                                                         \\
+	\hline
+	FR13        & The AI tutor must provide challenge-aware guidance without simply giving away the answer.       & The chat route builds a prompt using challenge metadata and the private solution summary, then blocks responses that leak flags or the full solution.       \\
+	\hline
+	FR14        & Users should be able to review previous attempts.                                               & Challenge history pages show previous challenges, statuses, message counts, persisted tutor conversations, and solution summaries for completed challenges. \\
+	\hline
+	FR15        & The system should support later evaluation of generation and orchestration reliability.         & The repository includes an evaluation harness with static, deploy, inject, and full verification modes, exporting structured result artefacts.              \\
+	\hline
 \end{longtable}
 
-\subsection{Non-functional requirements}\label{sec:non_functional_requirements}
+\subsection{Non-functional requirements and constraints}\label{sec:non_functional_requirements}
 
-\begin{longtable}{|p{0.10\textwidth}|p{0.40\textwidth}|p{0.43\textwidth}|}
-\caption{Non-functional requirements}
-\label{tab:non-functional-requirements-long}\\
+\begin{longtable}{|p{0.16\textwidth}|p{0.77\textwidth}|}
+	\caption{Non-functional requirements and constraints}
+	\label{tab:non-functional-requirements-long}                                                                                                                                                                                                                                                                                                                             \\
+	\hline
+	\textbf{Constraint} & \textbf{Design implication}                                                                                                                                                                                                                                                                                                                        \\
+	\hline
+	\endfirsthead
+	\hline
+	\textbf{Constraint} & \textbf{Design implication}                                                                                                                                                                                                                                                                                                                        \\
+	\hline
+	\endhead
+	\hline
+	\multicolumn{2}{|r|}{\emph{Continued on next page}}                                                                                                                                                                                                                                                                                                                      \\
+	\hline
+	\endfoot
+	\hline
+	\endlastfoot
 
-\hline
-\textbf{ID} & \textbf{Requirement} & \textbf{Design Response} \\
-\hline
-\endfirsthead
-
-\hline
-\textbf{ID} & \textbf{Requirement} & \textbf{Design response} \\
-\hline
-\endhead
-
-\hline
-\multicolumn{3}{|r|}{\emph{Continued on next page}} \\
-\hline
-\endfoot
-
-\hline
-\endlastfoot
-
-NFR1 &
-Containment &
-The generated vulnerability must remain inside the challenge container. The system uses unprivileged LXC containers, a non-root \lstinline|student| account, prompt constraints that prohibit host level vulnerabilities, and application boundaries that prevent a user from directly invoking Proxmox or Ansible. \\
-\hline
-
-NFR2 &
-Ephemerality &
-The machines spun up should be short lived. The application records an expiry timestamp for each challenge, and the Proxmox host will run a TTL script so that clean up is not solely relying on the web application being online. \\
-\hline
-
-NFR3 &
-Reliability &
-A challenge launch has many stages, LLM generation, container deployment, health verification, and database insertions. Therefore, the design must have clear progress feedback, useful error messages, and clean up stages when a container has been created, but then something fails.\\
-\hline
-
-NFR3 &
-Safety &
-The LLM can produce malformed content, enter invalid packages, or run commands it should not. The system should use a typed schema, response validation, detailed prompts, fallback models, prompt level constraints, and explanation evaluations to reduce the risk \\
-\hline
-
-NFR5 &
-Usability &
-The student should not need to understand Ansible, Proxmox, LXC containers, or the generation pipeline. The UI should be simple and easy to navigate, with progress updates, a copy-able SSH command, a countdown timer, hints, and tutor support
-\\
-\hline
-
-NFR6 &
-Network Access &
-The application will assume that students can access the container subnet through the lab networking setup. The current implementation will use Tailscale subnet routing, alternatives for production can include furhter network segmentation, but the current implementation will not. This is because it is not preparing to wide scale deployment. 
-\\
-\hline
-
+	Containment         & Generated vulnerabilities should remain inside the intended container. The system uses unprivileged LXC containers, a non-root \lstinline|student| account, prompt constraints forbidding host-level vulnerabilities, and application boundaries that prevent learners from directly invoking Proxmox or Ansible.                                  \\
+	\hline
+	Ephemerality        & Vulnerable machines should be short-lived. The application records an expiry timestamp for each challenge and the Proxmox host runs an independent cleanup process. This avoids relying solely on the web application being online.                                                                                                                \\
+	\hline
+	Reliability         & Challenge launch includes LLM generation, optional full verification, container deployment, injection, health verification, and database insertion. The design therefore needs progress feedback, useful error reporting, and cleanup when a stage fails after a container has already been created.                                               \\
+	\hline
+	LLM safety          & The model is untrusted and may produce malformed JSON, unsafe commands, repeated scenarios, broken applications, missing packages, or directly exposed flags. The system uses schema validation, policy validation, fallback models, bounded verification contexts, health checks, flag-protection checks, and optional full exploit verification. \\
+	\hline
+	Usability           & Learners should not need to understand Proxmox, Ansible, LXC, or the generation pipeline. The UI reduces the process to choosing a category and difficulty, observing progress, copying an SSH command, asking for hints, and submitting a flag.                                                                                                   \\
+	\hline
+	Maintainability     & The web UI, database, prompts, infrastructure automation, verification code, and evaluation scripts change for different reasons. The implementation therefore separates concerns across TypeScript modules, Drizzle repositories, Zod schemas, prompt modules, API routes, and Ansible playbooks.                                                 \\
+	\hline
+	Network access      & The application returns a direct container IP address and SSH command. The project assumes a lab networking path to the container subnet. Alternatives such as managed VPN onboarding or reverse proxying are outside the current application scope unless added later.                                                                            \\
+	\hline
+	Hardening caveats   & The prototype demonstrates the architecture, but a production deployment would need further hardening, including stricter container credential handling, stronger network controls, and immediate cleanup after successful completion.                                                                                                             \\
+	\hline
 \end{longtable}
-
 
 \section{Design}\label{sec:design}
-% System design: architecture, data flow, behaviour (UML, ER, state charts). Use diagrams. Research: use ``Approach and solution'' for your proposed solution(s).
-The architecure of VulnForge involved a fullstack Next.JS application connected to three systems. SQLite as the database of choice to store persistent information, OpenRouter as the LLM provider for generation and tutoring, and Ansible with Proxmox for infrastructure orchestration.
+
+The architecture of VulnForge uses a full-stack Next.js application as the control plane. It is connected to SQLite for persistent state, OpenRouter for LLM calls, Ansible for automation, and Proxmox VE for container lifecycle management.
 
 \begin{figure}[htbp]
-    \centering
-    \includegraphics[
-        width=\linewidth,
-        height=15cm,
-        keepaspectratio
-    ]{mermaid/from-spec/system_architecture.pdf}
-    \caption{System Architecture}
-    \label{fig:system-architecture}
+	\centering
+	\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{figures/system_architecture.pdf}
+	\caption{System architecture}
+	\label{fig:system-architecture}
 \end{figure}
 
-The web application is the central part of the application. It validates user input, manages accounts and sessions, stores challenge state, invokes the LLM calls, invokes the container orchestration, presents the challenge and confirms completion. Ansible is used as the infrastructure automation layer, with Proxmox as the hypervisor. This keeps the web application focused on key operations, whilst handing over any infrastructure tasks to Ansible via Ansible Playbooks.
-\marginpar{ TODO - Potentially explain what ansible \& playbooks are.}
-It deliberately avoids exposing infrastructure code to users. Students do not need to interact with Proxmox, Ansible and APIs. They only interact with the generated environment and the chatbot.
+The web application is the central authority. It validates user input, manages accounts and sessions, stores challenge state, invokes the LLM, invokes container orchestration, presents the challenge, and confirms completion. Students do not receive Proxmox credentials, Ansible inventory data, API tokens, flags, generated validation commands, or the private solution summary while a challenge is active.
 
-\subsection{Data Model}\label{sec:data_model}
+Ansible is used as the infrastructure automation layer rather than embedding all Proxmox operations directly into the web application. This keeps the TypeScript code focused on workflow orchestration and leaves container operations visible as playbooks. The trade-off is that the web application must parse Ansible output, handle subprocess failures, and clean up when a playbook fails part-way through. This trade-off is acceptable because the project depends on repeatable infrastructure operations and because playbooks make the host-level actions easier to inspect and debug.
 
-The database contains four tables: users, sessions, challenges and messages.
+Proxmox LXC containers were chosen because they are lightweight, scriptable, and quick to create compared with full virtual machines. This matters because a challenge launch can already be delayed by LLM generation and verification. The limitation is that LXC containers are not as strong an isolation boundary as full VMs because they share the host kernel. For this prototype, unprivileged containers, a non-root learner account, short TTLs, and restricted generation policies are used to reduce risk. A production version would need stronger network and isolation controls.
+
+\subsection{Data model}\label{sec:data_model}
+
+The database contains four main entities: users, sessions, challenges, and messages.
 
 \begin{figure}[htbp]
-    \centering
-    \includegraphics[
-        width=\linewidth,
-        height=0.82\textheight,
-        keepaspectratio
-    ]{figures/database_schema.pdf}
-    \caption{Database schema}
-    \label{fig:db_schema}
+	\centering
+	\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{figures/database_schema.pdf}
+	\caption{Database schema}
+	\label{fig:db_schema}
 \end{figure}
 
-The challenges table is one of the most imporatnt, connecting the user facing challenge to the generated infrastructure. It stores metadata such as title, description, hint, category, difficulty and attack vector. It also stores server only data (the flag and solution summary). Specific methods deliberately expose a public challenge type that omits these fields unless the challenge is completed, when completed, it provides the solution summary as a learning opportunity. 
+The \lstinline|challenges| table is the central domain object. It connects a database record to generated infrastructure by storing the Proxmox VMID, IP address, and hostname. It also stores user-facing metadata such as title, description, category, difficulty, hint, and attack vector. The \lstinline|flag| and \lstinline|solution_summary| fields are private fields used by the flag checker and tutor. Repository methods expose a public challenge object that omits these fields while the challenge is active.
 
-The challenge is represented in four states:
+Challenge state is represented by a \lstinline|status| field rather than only by the presence or absence of a completion timestamp.
 
 \begin{table}[htbp]
-    \centering
-    \begin{tabular}{@{}>{\raggedright\arraybackslash}p{2cm}p{7cm}p{5cm}@{}}
-        \toprule
-        \textbf{Status} & \textbf{Meaning} & \textbf{Set by} \\
-        \midrule
-        active & The user can work on the challenge and the container is expected to exist. & Challenge creation. \\
-        \addlinespace
-        completed & The correct flag was submitted before expiry. & Flag submission route. \\
-        \addlinespace
-        destroyed & The user manually ended the challenge. & Challenge delete route. \\
-        \addlinespace
-        expired & The challenge exceeded its TTL. & Active challenge checks, launch cleanup, or expired flag submission handling. \\
-        \bottomrule
-    \end{tabular}
-    \caption{Challenge status definitions}
-    \label{tab:challenge-status}
+	\centering
+	\begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.5cm}p{7cm}p{4.8cm}@{}}
+		\toprule
+		\textbf{Status}       & \textbf{Meaning}                                                           & \textbf{Set by}                                                               \\
+		\midrule
+		\lstinline|active|    & The user can work on the challenge and the container is expected to exist. & Challenge creation.                                                           \\
+		\addlinespace
+		\lstinline|completed| & The correct flag was submitted before expiry.                              & Flag submission route.                                                        \\
+		\addlinespace
+		\lstinline|destroyed| & The user manually ended the challenge.                                     & Challenge delete route.                                                       \\
+		\addlinespace
+		\lstinline|expired|   & The challenge exceeded its TTL.                                            & Active challenge checks, launch cleanup, or expired flag submission handling. \\
+		\bottomrule
+	\end{tabular}
+	\caption{Challenge status definitions}
+	\label{tab:challenge-status}
 \end{table}
 
-There is a partial unique index on \lstinline|challenges(user_id)| where \lstinline|completed_as IS NULL| to enforce the idea that a user can only have one active challenge, to prevent a race condition when the same user sends multiple requests to create a challenge.
+A partial unique index on \lstinline|challenges(user_id)| where \lstinline|status = 'active'| enforces the rule that a user can only have one active challenge. This is stronger than an application-only check because it still works if two launch requests race.
 
-\subsection{Challenge Lifecycle}\label{sec:lifecycle}
+\subsection{Challenge lifecycle}\label{sec:lifecycle}
 
-The challenge lifecycle presented to the user is deliberatly simple, however requires careful consideration from the database and infrastructure to prevent mismatched state and inconsistencies. The application checks challenge status before chat requests, flag submissions, and deletion requests. The chat bot is only interactive in active challenges, with the history page allowing the user to view them in read-only mode. Correct flag submissions are marked as \lstinline|completed|. Manual deletion of containers marks them as \lstinline|destroyed|, and immediatgely triggers container deletion from the backend asynchronously. Expiry is handled application side, and then also by a cronjob on the host named the TTL Reaper. 
-
-\begin{figure}[htp]
-    \centering
-    \includegraphics[
-        width=\linewidth,
-        height=0.82\textheight,
-        keepaspectratio
-    ]{figures/challenge_lifecycle.pdf}
-    \caption{Challenge Lifecycle}
-    \label{fig:challenge_lifecycle}
-\end{figure}
-
-There is a deliberate separation between the logical flow and the infrastructure state. The database may mark a challenge as destroyed before the Ansible destroy playbook has finished running, and the TTL reaper may delete a container before the database is next checked. VulnForge accepts these possibilities as the main requirement is to prevent the user from continuing to interact with stale challenges that should be destroyed, and to prevent indefinite resource usage. Having the TTL reaper as a cronjob that runs every 5 minutes, checking container \lstinline|uptime| to see if it exceeds 60 minutes means that we can guarantee containers are cleaned up, regardless of database state. 
-
-\subsection{Launch Pipeline}\label{sec:launch_pipeline}
-The challenge launch pipeline is the most complex aspect of the project. It gets exposed to the user via the browser as a server sent event stream so that the UI can show progress as it is occuring. This is because the operations can take a while, and we do not want the user to think something has frozen, so this shows them intermediate progress. 
+The challenge lifecycle is deliberately simple from the learner's perspective but requires careful implementation because database state and infrastructure state can become inconsistent.
 
 \begin{figure}[htbp]
-    \centering
-    \includegraphics[
-        width=\linewidth,
-        height=0.82\textheight,
-        keepaspectratio
-    ]{figures/launch_generation.pdf}
-    \caption{Launch Pipeline}
-    \label{fig:launch_pipeline}
+	\centering
+	\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{figures/challenge_lifecycle.pdf}
+	\caption{Challenge lifecycle}
+	\label{fig:challenge_lifecycle}
 \end{figure}
 
-The pipeline has two verification levels. Regular launches from the browser run a health verification mode. This executes health checks and flag protection checks. This can catch commonf failures such as a web server not starting, a generated file missing, or the flag being directly readable by the student. Full exploit verification is the other mode. This is controlled by an environment variable named \lstinline|CHALLENGE_FULL_VERIFY_BEFORE_LAUNCH|. When this mode is enabled, the application will first deploy a disposable container, named the 'verifier'. This container will have the generated vulnerability specfication injected into it, run the exploit checks provided by the LLM, and then if it verifies it works, destroy the temporary container and deploy a fresh user facing container. This is only used when the environment variable is enabled as it is quite time intensive, and we do not want the user to have the delay. It also avoids giving the user a container that has already been mutated by the exploit checks, as if we ran this on the users container, certain changes such as permission ones would have to be reverted, causing increased complexity. 
+The application checks challenge status before chat requests, flag submissions, and deletion requests. Chat is only interactive for an active challenge, while history pages allow past messages to be viewed in read-only mode. Correct flag submissions are marked as \lstinline|completed|. Manual deletion marks the challenge as \lstinline|destroyed| immediately and then triggers container deletion asynchronously. Expiry is handled by application-side checks and by a host-side TTL reaper.
 
+There is a deliberate separation between logical state and infrastructure state. The database may mark a challenge as destroyed before the Ansible destroy playbook has finished. Similarly, the TTL reaper may delete a container before the database is next checked. VulnForge accepts this eventual consistency because the main requirement is to stop users interacting with stale challenges and to prevent indefinite resource use. The design favours safe terminal state transitions and independent cleanup over a more complex distributed transaction between the database and Proxmox.
+
+\subsection{Launch pipeline}\label{sec:launch_pipeline}
+
+Challenge launch is the most complex workflow in the platform. It is exposed to the browser as a Server-Sent Events stream so that the UI can show progress during long-running stages.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{figures/launch_generation.pdf}
+	\caption{Launch pipeline}
+	\label{fig:launch_pipeline}
+\end{figure}
+
+The pipeline has two verification levels. Normal launches run health-mode verification, which executes health checks and flag-protection checks. This catches common failures such as a web server not starting, a generated file missing, or the flag being directly readable by the learner. Full exploit verification is controlled by \lstinline|CHALLENGE_FULL_VERIFY_BEFORE_LAUNCH|. When this is enabled, the platform first deploys a disposable verifier container, injects the generated specification, runs exploit checks, destroys the verifier container, and only then deploys a fresh user-facing container.
+
+This split is a deliberate design compromise. Full exploit verification gives stronger evidence that the generated challenge is solvable, but it is slower and can mutate the machine. For example, a privilege escalation exploit might change permissions, add files, or alter service state. Running such checks on the user's final container could partially solve or damage the challenge before the user begins. Health-mode verification is therefore used for normal launches, while full verification is reserved for evaluation or deployments where the extra delay is acceptable.
 
 \subsection{Vulnerability generation design}\label{sec:vuln_gen_design}
 
-The LLM does not directly control the infrastructure, instead it produces a structured \lstinline|VulnerabilitySpec| object that is treated as a data source. The schema includes the following:
+The LLM does not directly control the infrastructure. Instead, it produces a structured \lstinline|VulnerabilitySpec| object that is treated as data.
 
 \begin{figure}[htbp]
-    \centering
-    \includegraphics[
-        width=\linewidth,
-        height=0.82\textheight,
-        keepaspectratio
-    ]{figures/generation_policy.pdf}
-    \caption{Generation Policy}
-    \label{fig:generation_policy}
+	\centering
+	\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{figures/generation_policy.pdf}
+	\caption{Generation and policy validation pipeline}
+	\label{fig:generation_policy}
 \end{figure}
 
-The design uses various safeguards to ensure the LLM generates a vulnerability to VulnForge's specification.
-\begin{enumerate}
-    \item Server side flag generation: The platform generates the flag as \lstinline|FLAG{...}| using random bytes. This occurs before we call to the LLM, and the LLM is then instructed to embed this exact flag string somewhere exploitable. This avoids relying on the model to generate a unique flag, and allows us to store it in logs and context, without having to wait for the LLM call to extract it. Furthremore, any aspects we can compute server side are useful as it means that we do not need excessive LLM calls that can result in further delay. 
-    \item Structured output: The Zod schema is converted to JSON, and then sent to OpenRouter. The response is still parsed, and validated again server side.
-    \item Policy validation: The schema checks can verify structure, but policy validation ensures that there is not semantic issues occuring. This can include incorrect categories or difficulties, missing flags, attempts to modify \lstinline|SSH| configuration, or unsafe commands.
-    \item Category specific prompts: Each vulnerability has its own prompt and variant. This prevents having one large prompt file, instead giving each category clear requirements.
-    \item Diversity mechanisms: A random category is selected for each launch of a machine. Web based activities can also receive a specific application theme sucha s a booking system. Then we store the users past themes, and add them to an exclusion list, so the model does not repeat the same scenario. This is to prevent the application appearing as if it is continually generating the same scenario, providing variety to the user to keep them engaged. 
-\end{enumerate}
+The specification includes public challenge metadata, deployment instructions, private learning metadata, and private verification metadata. An abbreviated version of the schema boundary is:
 
-This design allows the model to have some freedom to invent scenarios, whilst keeping them grounded in the set boundary of the rest of the system. So this way, the system interprets a typed, validated specification rather than natural language.
+\begin{lstlisting}
+export const VulnerabilitySpecSchema = z.object({
+  title: z.string(),
+  description: z.string(),
+  category: z.string(),
+  difficulty: z.enum(["beginner", "intermediate", "advanced"]),
+  hint: z.string(),
+  apt_packages: z.array(AptPackageSchema),
+  files: z.array(FileEntrySchema).min(1),
+  services: z.array(ServiceSchema),
+  setup_commands: z.array(z.string()).default([]),
+  solution_summary: z.string(),
+  attack_vector: z.string(),
+  validation: ValidationSpecSchema,
+});
+\end{lstlisting}
+
+The choice to use structured output is central to the design. A free-text response from the LLM would be difficult to validate and dangerous to execute. A typed specification creates a contract between the model and the infrastructure pipeline. The rest of the system consumes files, packages, services, setup commands, and validation checks as structured fields rather than interpreting arbitrary natural language.
+
+The design uses several safeguards:
+\begin{enumerate}
+	\item \textbf{Server-side flag generation.} The platform generates the flag as \lstinline|FLAG{...}| before calling the LLM. The model is instructed to embed this exact value somewhere reachable only through exploitation. This avoids relying on the model to invent a unique valid flag.
+	\item \textbf{Structured output.} The Zod schema is converted to JSON Schema and sent to OpenRouter as a structured response format. The response is still parsed and validated again server-side.
+	\item \textbf{Policy validation.} Schema validation checks structure, while policy validation checks semantic risks such as wrong category, wrong difficulty, missing flag, attempts to recreate the \lstinline|student| user, attempts to modify SSH configuration, unsafe paths, or unsafe validation commands.
+	\item \textbf{Category-specific prompts.} Each vulnerability category has its own prompt and variants. This avoids one unmaintainable prompt file and gives each category clearer constraints.
+	\item \textbf{Diversity mechanisms.} The prompt builder selects random variants and, for web categories, random application themes. It also passes previous challenges into the prompt as an exclusion list so that the model is instructed not to repeat previous scenarios.
+	\item \textbf{Model fallback.} The OpenRouter integration can retry generation with fallback models when provider failures, empty responses, truncated responses, rate limits, or temporary server errors occur.
+\end{enumerate}
 
 \subsection{Verification design}\label{sec:verification_design}
 
-Earlier versions of the software would check just whether Ansible completed, however, we soon noticed that this was inadequate as Ansible succeeding does not necessarily mean that a usable challenge has been generated. For example, a web service may start, however, a intentional exploit path may be inaccessible. 
+Earlier versions of the system checked whether Ansible completed, but Ansible success alone does not prove that the generated challenge is usable. A web service may start but serve the wrong page, generated files may exist but be inaccessible, or the flag may be readable without exploitation. Verification therefore became part of the vulnerability specification.
 
-Each validation command contains a name, description, context, command string, timeout, expected error code, exptected stout and stderr, and a \lstinline|must_recover_flag| that can be enabled. 
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\linewidth,height=0.75\textheight,keepaspectratio]{figures/verification.pdf}
+	\caption{Verification contexts and checks}
+	\label{fig:verification-system}
+\end{figure}
 
-\marginpar{TODO: add table}
+Each validation command contains a name, description, context, command string, timeout, expected exit code, expected stdout/stderr conditions, and a \lstinline|must_recover_flag| field. The runner supports three execution contexts.
 
 \begin{table}[htbp]
-    \centering
-    \begin{tabular}{@{}>{\raggedright\arraybackslash}p{3.5cm}p{5cm}p{5cm}@{}}
-        \toprule
-        \textbf{Context} & \textbf{Meaning} & \textbf{Typical use} \\
-        \midrule
-        \lstinline{container_root} & Run inside the LXC container as root through \lstinline{pct exec}& Starting / stopping \lstinline{systemd} services and file checks\\
-        \addlinespace
-        completed & The correct flag was submitted before expiry. & Flag submission route. \\
-        \addlinespace
-        destroyed & The user manually ended the challenge. & Challenge delete route. \\
-        \addlinespace
-        expired & The challenge exceeded its TTL. & Active challenge checks, launch cleanup, or expired flag submission handling. \\
-        \bottomrule
-    \end{tabular}
-    \caption{Verification Running Context}
-    \label{tab:verification-runner-context}
+	\centering
+	\begin{tabular}{@{}>{\raggedright\arraybackslash}p{3.5cm}p{5cm}p{5cm}@{}}
+		\toprule
+		\textbf{Context}              & \textbf{Meaning}                                                                     & \textbf{Typical use}                                   \\
+		\midrule
+		\lstinline|container_root|    & Run inside the LXC container as root through \lstinline|pct exec|.                   & Service checks, file checks, package checks.           \\
+		\addlinespace
+		\lstinline|container_student| & Run inside the LXC container as the \lstinline|student| user.                        & Flag-protection checks from the learner's perspective. \\
+		\addlinespace
+		\lstinline|external_http|     & Run from the Proxmox host against the container IP, normally using \lstinline|curl|. & Web application health checks and exploit checks.      \\
+		\bottomrule
+	\end{tabular}
+	\caption{Verification runner contexts}
+	\label{tab:verification-runner-context}
 \end{table}
 
-The validator treats validation commands as untrusted as they are generated by the model. Host related commands such as \lstinline{pct}, \lstinline{pvesh} and \lstinline{qm} are rejected, alongside cloud metadata access, OpenRouter references, SSH commands and external HTTP checks that are not related to the target URL / container IP. This is a middle-ground we have decided on, as the model is able to describe how we should validate the specific challenge, cut the platform constraints still limit how these commands may run. 
-
+The validator treats generated validation commands as untrusted. Host-control commands such as \lstinline|pct|, \lstinline|pvesh|, and \lstinline|qm| are rejected, alongside cloud metadata access, OpenRouter/API key references, SSH commands, and external HTTP checks that do not target the generated URL or IP. This is a pragmatic compromise: the model can describe how the challenge should be validated, but the platform constrains where and how the checks can run.
 
 \subsection{Tutor design}\label{sec:tutor}
 
-The tutor is a chatbot that is aware of the context of the current challenge. When the user sends a message, the chat route loads the authenticated user's challenge, and checks the supplied challenge ID matches i. If so, it builds a system prompt containing the challenge title, description, category, difficulty, hint, attack vector and the solution summary (which is hidden from the user). 
-
-The tutors purpose is to provide progressive guidance, it should explain concepts and suggested methods, but it should not reveal the flag or provide the entire exploit path in one response. It uses two layers of protection to enforce this:
-
-\begin{enumerate}
-    \item Firstly, the tutor has system prompt instructions, that instruct it not to reveal the flag, the flag path, or any full step-by-step solution.
-    \item Secondly, the application checks the generated response response before streaming it back, and check it for a \lstinline|FLAG{...}| pattern, the stored flag, or the solution summary. If any are present, the response is replaced by a block message saying: \lstinline{"I can't provide the flag or the full exploit path. Ask for a smaller hint and I'll guide you step by step."}. The messages are persisted after each entire response by the LLM. This supports the continued educational aspect, enabling read only review in the history page to fully review how you as a user approached the challenge. 
-\end{enumerate}
-
-\subsection{Challnege history and learning review}\label{sec:challenge-history}
-
-The history page of the application is designed to increase the educational value of the activity beyond just attacking a vulnerable machine. The history shows the entire history of challenges for the authenticated user from an internal API, containing message counts and status information.
+The tutor is a challenge-aware assistant rather than a general chatbot. When a user sends a message, the chat route loads the authenticated user's active challenge and checks that the supplied challenge ID matches it. It then builds a system prompt containing the challenge title, description, category, difficulty, hint, attack vector, and private solution summary.
 
 \begin{figure}[htbp]
-    \centering
-    \includegraphics[
-        width=\linewidth,
-        height=0.82\textheight,
-        keepaspectratio
-    ]{images/history-overview.png}
-    \caption{Overview of user history}
-    \label{fig:history-overview}
+	\centering
+	\includegraphics[width=\linewidth,height=0.75\textheight,keepaspectratio]{figures/tutor_chat_flow.pdf}
+	\caption{Tutor chat flow}
+	\label{fig:tutor-chat-flow}
 \end{figure}
 
-Then you can look at specific challenges, seeing the solution summary and your chat history to understand where you went wrong if you were unable to complete the challenge. This creates a clear distinction between the guidance offered when attempting to attack a machine, and an explanation after a successful or failed attempt. 
+The tutor's purpose is to provide progressive guidance. It should explain concepts and suggest methods, but it should not reveal the flag or provide the full exploit path in one response. The design uses two layers of protection. First, the tutor system prompt instructs the model not to reveal the flag, exact flag path, or full step-by-step solution. Secondly, the application checks the generated response before streaming it back. If the response contains a \lstinline|FLAG{...}| pattern, the exact stored flag, or the full normalised solution summary, the response is replaced by a block message asking the user to request a smaller hint.
+
+Messages are persisted after a complete assistant response. This supports continuity during an active challenge and enables read-only review in the history page after a challenge has ended.
+
+\subsection{Challenge history and learning review}\label{sec:challenge-history}
+
+The history page increases the educational value of the platform beyond a single active challenge. The history API returns previous challenges for the authenticated user, with message counts and status information.
 
 \begin{figure}[htbp]
-    \centering
-    \includegraphics[
-        width=\linewidth,
-        height=0.82\textheight,
-        keepaspectratio
-    ]{images/history-challenge.png}
-    \caption{History of a specific challenge}
-    \label{fig:history-challenge}
+	\centering
+	\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/history-overview.png}
+	\caption{Overview of user history}
+	\label{fig:history-overview}
 \end{figure}
 
+Completed challenges include the solution summary for learning review. Active challenges do not expose it. This creates a distinction between guidance during an attempt and explanation after a successful solve. It also makes the tutor conversation part of the learning record rather than a temporary front-end-only state.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/history-challenge.png}
+	\caption{History of a specific challenge}
+	\label{fig:history-challenge}
+\end{figure}
 
 \section{Implementation}\label{sec:impl}
 
-\subsection{Tech Stack \& Project Structure}\label{sec:tech-stack}
+\subsection{Technology stack and project structure}\label{sec:tech-stack}
 
-\marginpar{TODO: Add versions here}
-The project was built with TypeScript and React for the web application, Drizzle ORM as a mapper for the database to allow type safe queries, SQLite as a local database, Zod for schema validation, OpenRouter for LLM integration and Pino for logging. The back end was constructed with Next.JS to have actions run on the server instead of the client, Ansible to automatically deploy and provision containers, and Proxmox as a hypervisor. 
+The application is implemented with Next.js, React, TypeScript, Drizzle ORM, SQLite, Zod, Pino, Ansible, and Proxmox VE. The main implementation areas are summarised in Table~\ref{tab:implementation-areas}.
 
-\marginpar{TODO: add table}
+\begin{table}[htbp]
+	\centering
+	\begin{tabular}{@{}>{\raggedright\arraybackslash}p{4cm}>{\raggedright\arraybackslash}p{9.5cm}@{}}
+		\toprule
+		\textbf{Area}                            & \textbf{Key implementation files}                                                                                       \\
+		\midrule
+		Authentication and sessions              & \lstinline|app/lib/auth.ts|, \lstinline|app/api/auth/*|, session repository.                                            \\
+		User settings and SSH keys               & \lstinline|app/api/user/settings/route.ts|, \lstinline|app/lib/ssh-key.ts|.                                             \\
+		Database and repositories                & \lstinline|app/lib/db/schema.ts|, \lstinline|app/lib/db/repositories/*|, \lstinline|drizzle/*.sql|.                     \\
+		LLM generation and prompts               & \lstinline|app/lib/openrouter.ts|, OpenRouter client and fallback modules, prompt category modules.                     \\
+		Container orchestration                  & \lstinline|app/lib/ansible-runner.ts|, \lstinline|deploy.yml|, \lstinline|destroy.yml|, LXC lifecycle role.             \\
+		Vulnerability injection and verification & \lstinline|inject-vulnerability.yml|, \lstinline|verify-vulnerability.yml|, \lstinline|app/lib/verification-runner.ts|. \\
+		Challenge APIs and tutor                 & \lstinline|app/api/challenges/*|, \lstinline|app/api/chat/route.ts|, \lstinline|ChatPanel.tsx|.                         \\
+		Evaluation support                       & \lstinline|scripts/evaluate.ts| and generated result artefacts.                                                         \\
+		\bottomrule
+	\end{tabular}
+	\caption{Main implementation areas}
+	\label{tab:implementation-areas}
+\end{table}
 
-Drizzle runs migrations automatically when the database is created, with SQLite being configured in WAL mode (write-ahead logging) to allow the application to perform concurrent reads and writes during actions that may have a lock on the database such as launching of challenges, or chat persistence.
+Drizzle runs migrations automatically when the database connection is created. SQLite is configured with WAL mode and foreign keys enabled. WAL mode is useful because the application performs concurrent reads and writes during actions such as challenge launch, history loading, and chat persistence.
 
-\subsection{Authentication, settings and user state}\label{sec:auth-settings}
+\subsection{Authentication, settings, and user state}\label{sec:auth-settings}
 
-Authentication is implemented with email and password combination. Passwords are hashed with bcrypt before being stored. A successful login creates a row in the sessions table, and sets a HTTP only session cookie named \lstinline{session_token}. The cookie has a seven day expiration. API routes that require you to be logged in run \lstinline{requireAuth()} which reads the cookie from the user, check the session exists in the database and has not expired, and once these are validated, it loads the corresponding users data. 
+Authentication is implemented with email/password accounts. Passwords are hashed with bcrypt before storage. A successful login creates a session row and sets an HTTP-only cookie named \lstinline|session_token|. The cookie is marked secure in production and has a seven-day expiry. API routes that require login call \lstinline|requireAuth()|, which reads the cookie, checks that the session exists and has not expired, and loads the corresponding user.
 
-The settings route allows the user to update their public SSH key, and password. SSH keys are validated with regular expression that accepts common SSH key types such as \lstinline{ssh-ed25519} and \lstinline{ssh-rsa}, \lstinline{ECDSA} and security key backed \lstinline{ed25519}. 
-The launch route refuses to provision a new challenge if the authenticated user does not have an associated SSH key, ensuring key configuration is at the start of the workflow, displaying a message to the user saying they need to set it, this also prevents any LLM calls or container creation as we do not want extra resource usage if the user is unable to connect to the container. 
+The settings route allows the user to update their SSH public key and password. SSH key input is validated with a regular expression that accepts common public key types, including \lstinline|ssh-ed25519|, \lstinline|ssh-rsa|, ECDSA keys, and security-key-backed Ed25519 keys. The launch route refuses to provision a challenge if the authenticated user has not stored an SSH public key. This moves key configuration failure to the start of the workflow, before any LLM call or container creation occurs.
 
 \begin{figure}[htbp]
-    \centering
-    \includegraphics[
-        width=\linewidth,
-        height=0.82\textheight,
-        keepaspectratio
-    ]{images/required-ssh-key-config.png}
-    \caption{User requires an SSH key before starting a challenge}
-    \label{fig:ssh-key-required}
+	\centering
+	\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/required-ssh-key-config.png}
+	\caption{User requires an SSH key before starting a challenge}
+	\label{fig:ssh-key-required}
 \end{figure}
 
-\subsection{Database respositories and status transactions}\label{sec:database-reponsitories}
+\subsection{Database repositories and status transitions}\label{sec:database-repositories}
 
-We have a data access layer that wraps access to any database related actions for users, sessions, challenges and messages. This prevents API routes from containing raw SQL and allows the application to have a single point to enforce domain specific behavior. Each table has its own associated respository which houses it's specific functions.
-
+Repository modules wrap database access for users, sessions, challenges, and messages. This prevents API routes from containing raw SQL and gives the application a single place to enforce domain behaviour.
 
 \begin{figure}[htbp]
-    \centering
-    \includegraphics[
-        width=\linewidth,
-        height=0.82\textheight,
-        keepaspectratio
-    ]{images/db-repositories.png}
-    \caption{Each tables database repository}
-    \label{fig:db-repositories}
+	\centering
+	\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/db-repositories.png}
+	\caption{Database repository structure}
+	\label{fig:db-repositories}
 \end{figure}
 
-The challenge repository creates new challenges with \lstinline{status = 'active'}, an expiry time that is one hour after creation, and a \lstinline{completed_at} timestamp. It provides methods for finding the active challenge for a user, retrieving all challenges for history, finding prior challenges from a specific category to ensure the new challenges are diverse, finding expired challenges, and transitioning a challenge from active to expired.
+The challenge repository creates new challenges with \lstinline|status = 'active'|, an expiry time one hour after creation, and no \lstinline|completed_at| timestamp. It provides methods for finding the active challenge for a user, retrieving all challenges for history, finding prior challenges in a category for diversity prompting, finding expired active challenges, and transitioning a challenge into a terminal state.
 
-To enforce the rule that one user can only have one challenge we do:
-
+The one-active-challenge rule is enforced in three layers:
 \begin{enumerate}
-    \item The launch route checks for an existing active challenge 
-    \item The launch route re-checks before inserting into the database after we have generated a vulnerability and provisioned the machine
-    \item The database has a partial unique index on active challenges for users
+	\item the launch route checks for an existing active challenge at request start;
+	\item the launch route re-checks immediately before database insertion, after the slow generation and provisioning steps;
+	\item the database has a partial unique index on active challenges for each user.
 \end{enumerate}
+The database index is the strongest layer because it handles race conditions that application checks cannot fully prevent.
 
-The partial unique index is seen as the most important as it handles race conditions that the application may struggle to prevent. 
+\subsection{OpenRouter generation implementation}\label{sec:openrouter-implementation}
 
+The generation entry point is \lstinline|generateVulnerability()| in \lstinline|app/lib/openrouter.ts|. It generates a random server-side flag, builds a category-specific prompt, converts the Zod vulnerability schema to JSON Schema, calls OpenRouter with a structured response format, parses the returned JSON, validates it against \lstinline|VulnerabilitySpecSchema|, runs semantic policy validation, and returns the validated specification and flag.
 
-\subsection{OpenRouter implementation}\label{sec:openrouter-implementation}
-
-To generate a vulnerability for a machine, the entry-point is the \lstinline{generateVulnerability()} method inside \lstinline{app/lib/openrouter.ts}. To do so, it performs the following steps:
-\begin{enumerate}
-    \item Generate a random flag, stored server side 
-    \item Build a category specific prompt based on what the user has selected, the difficulty, the random variant and theme (based on the users history) - this is classed as the user prompt
-    \item Convert the Zod internal schema into a JSON schema that the LLM can adhere to 
-    \item Send the system prompt, alongside the user propmt to OpenRouter with the structured response format 
-    \item Parse the returned text as JSON 
-    \item Validate it against the internal \lstinline{VulnerabilitySpecSchema}
-    \item Run semantic validation
-\end{enumerate}
-
-\begin{center}
-\begin{minipage}{\linewidth}
-\captionsetup{type=listing,hypcap=false}
-\caption{\texttt{VulnerabilitySpecSchema} that the LLM should adhere to}
-\label{code:VulnerabilitySpecSchema}
-\end{minipage}
-\end{center}
-\begin{minted}{TypeScript}
-    export const ValidationSpecSchema = z.object({
-  health_checks: z.array(ValidationCommandSchema).min(1),
-  flag_protection_checks: z.array(ValidationCommandSchema).min(1),
-  exploit_checks: z.array(ValidationCommandSchema).min(1),
-});
-
-/**
- * The complete vulnerability specification returned by OpenRouter
- * We view it as the contract between the LLM and the injection pipeline
- */
-export const VulnerabilitySpecSchema = z.object({
-  title: z
-    .string()
-    .describe(
-      "A short, human-readable title for this vulnerability scenario, e.g. 'Nginx Path Traversal via Misconfigured Alias'"
-    ),
-  description: z
-    .string()
-    .describe(
-      "A 2-4 sentence description of the vulnerability, what it is, and why it is dangerous. This will be shown to the user as their briefing."
-    ),
-  category: z
-    .string()
-    .describe(
-      "The vulnerability category, e.g. web_server_misconfiguration, privilege_escalation, sql_injection"
-    ),
-  difficulty: z
-    .enum(["beginner", "intermediate", "advanced"])
-    .describe("The intended difficulty level of this challenge"),
-  hint: z
-    .string()
-    .describe(
-      "A single cryptic hint that nudges the user toward the attack vector without revealing the solution"
-    ),
-  apt_packages: z
-    .array(AptPackageSchema)
-    .describe(
-      "List of apt packages that must be installed for the vulnerable service to function"
-    ),
-  files: z
-    .array(FileEntrySchema)
-    .min(1)
-    .describe(
-      "The files to write into the container. Must include all configuration, application code, and the flag file."
-    ),
-  services: z
-    .array(ServiceSchema)
-    .describe(
-      "Systemd services to restart or enable after files are injected"
-    ),
-  setup_commands: z
-    .array(z.string())
-    .default([])
-    .describe(
-      "Optional shell commands to run inside the container after file injection and service restart, for any setup that cannot be expressed as files (e.g. creating database tables, adding system users). Each command is run as root via pct exec."
-    ),
-  solution_summary: z
-    .string()
-    .describe(
-      "A concise explanation of how to exploit this vulnerability and retrieve the flag. This is stored server-side and NEVER shown to the user; it is used by the tutor LLM to provide contextual hints."
-    ),
-  attack_vector: z
-    .string()
-    .describe(
-      "The MITRE ATT&CK technique or CWE identifier most relevant to this vulnerability, e.g. CWE-22 (Path Traversal) or T1059 (Command and Scripting Interpreter)"
-    ),
-  validation: ValidationSpecSchema.describe(
-    "Private server-side validation commands used to verify the challenge before presentation and during evaluation. Must include at least one health check, one flag-protection check, and one exploit check. Never shown to the student."
-  ),
-});
-\end{minted}
+The OpenRouter client is deliberately small. It handles model availability checks and chat completions for generation and tutor calls. A separate fallback helper builds a model chain from environment variables and defaults, removes duplicates, and retries retryable failures. Incomplete responses are treated as retryable because truncated JSON was a practical failure mode during development.
 
 \subsection{Prompt catalogue and diversity implementation}\label{sec:prompt-catalogue}
 
-Initially, to generate a vulnerability, we had just one prompt file, but as we expanded the variation of vulnerabilities, we realised that this needed to be segmented more, so it developed into a catalogue of category modules that are selected based on the users selection. Currently we support the following categories:
+The prompt implementation evolved from a single prompt file into a catalogue of category modules. The current categories are web server misconfiguration, privilege escalation, SQL injection, insecure file permissions, and web application logic flaws. Each category defines a user-facing label and description, a list of variants, whether it supports themes, and a prompt template.
 
-\begin{enumerate}
-    \item Web Server Misconfiguration
-    \item Privilege Escalation
-    \item SQL Injection
-    \item Insecure File Permissions
-    \item Web Application Logic Flaws
+The prompt builder chooses a variant randomly and, for web categories, chooses an application theme randomly. It also queries previous challenges for the user in the same category and passes recent titles and solution summaries into the prompt as an exclusion list. This is not a mathematical guarantee of uniqueness, but it gives the LLM explicit context about what not to repeat. The evaluation harness can measure diversity more concretely using generated titles, attack vectors, and file-set hashes.
+
+\subsection{Container deployment implementation}\label{sec:container-deployment}
+
+Container deployment is implemented through \lstinline|deploy.yml| and the LXC lifecycle role. The playbook creates an Ubuntu 24.04 unprivileged LXC container with one core, 1024 MB memory, an 8 GB root filesystem, DHCP networking on \lstinline|vmbr0|, and the \lstinline|vulnforge| tag. It then starts the container, creates the \lstinline|student| user, injects the user's SSH key, waits for an IP address, and writes a deployment artefact containing the VMID, hostname, IP address, and configuration details.
+
+The TypeScript wrapper executes \lstinline|ansible-playbook| using \lstinline|execFile()| rather than shell interpolation. Extra variables such as the SSH public key are passed as JSON. This reduces shell-injection risk and avoids quoting problems with SSH keys. A key implementation issue was SSH key injection: public keys contain spaces and can include comments, so interpolating them into shell commands is fragile. The final playbook writes the key to a temporary file on the host, uses \lstinline|pct push| to place it into the container as \lstinline|authorized_keys|, and then sets ownership and permissions inside the container.
+
+\subsection{Vulnerability injection implementation}\label{sec:vuln-injection}
+
+The injection boundary is defined inside the \lstinline{VulnerabilitySpec}, with the TypeScript runner writing this spec to a temporary JSON file, then passing it to the \lstinline{inject-vulnerability.yml} plyabook. The playbook does the following:
+
+\\begin{enumerate}
+	\item Validates inputs such as VMID and the spec file
+	\item Loads the JSON spec file
+	\item Updates the APT cache so packages are up to date
+	\item Installed requested packages from the spec file
+	\item Creates a temporary staging directory on the host, this is for files that the LLM has generated that are needed for the vulnerability
+	\item Creates the directories that the LLM has specified are needed, this could be the web application directory for example
+	\item Copies the files into the specified directories, from the temporary staging directory
+	\item Applies any required ownership changes, commonly required for privilege escalation, or privilege misconfiguration
+	\item Removes the staging directory
+	\item Starts and or enables services
+	\item Runs any setup commands required
+	\item Performs a final restart on required services to ensure all are running smoothly
 \end{enumerate}
 
-Each category has a user facing label and description of what it entails, then behind the scenes, there is a list of variants, and themes (where supported) and a prompt template. The prompt builder chooses a random variant, and for web categories, it chosses a random theme. This helps ensure that two identical requests for the same vulnerability and difficulty should not produce the same style of vulnerability. 
+When using a staging directory to push files, we have to use \lstinline{pct push} rather than \lstinline{pct exec} as this could cause shell escaping issues where file content may contain quotes, dollar signs or other special characters. These are common in PHP, SQL, HTML and JavaScript code that is commonly copied for web vulneraiblities. Having a staging section means that we can avoid this, however, this does partially come at a increased time cost as they are copied twice, but for smaller scale vulnerabilities, this is negligible.
 
-The prompt builder is also able to query previous challenges for the user to ensure they do not get the same category. It goes through the recent titles and solution summaries, and passes them into the prompt as part of an exclusion list, which the LLM is instructured not to use so a user would not get the same vulnerability and scenario twice. The evaluation harness which runs after the vulnerability is created measures the diversity in a more concrete way, using generated titlesl, attack vectors and file hashes to further ensure that the vulnerability is different. 
+Furthermore, we restart the services at the end again as during testing, we noticed that some setup commands to enable a site to run, create symlinks or modify configurations require the setup commands to run first, so we do this step again to ensure that the state is as expected. For example, without this, a web server would continue serving default configurations, rather than the intentionally vulnerable ones even though the files are present, by doing this final restart, we can ensure that post setup changes are loaded.
 
-\subsection{Container deployment}\label{sec:container-deployment}
- 
-Container deployment is implemented through the \lstinline{deploy.yml} playbook and the \lstinline{lxc_lifecycle.yml} role. The playbook creates an Ubuntu 24.04 unprivileged LXC container with one core, 1024 MB of memory, 8 GB root filesystem, DHCP on the \lstinline{vmbr0} interface and the \lstinline{vulnforge} tag inside Proxmox. It then starts the container, creates the \lstinline{student} user, injects the user's SSH key, waits to be assinged an IP address, then writes to a deployment artefact that containers the VMID, hostname, IP address and configuration details. 
-
-
-\begin{center}
-\begin{minipage}{\linewidth}
-\captionsetup{type=listing,hypcap=false}
-\caption{\texttt{Deployment Artefact}}
-\label{code:deployment-artefact}
-\end{minipage}
-\end{center}
-\begin{minted}{JSON}
-{
-    "cores": 1,
-    "created_at": "2026-04-16T14:43:24.435859",
-    "hostname": "lab-1776346995",
-    "ip": "192.168.0.81",
-    "memory": 1024,
-    "net0": "name=eth0,bridge=vmbr0,ip=dhcp",
-    "rootfs": "local-lvm:8",
-    "template_file": "ubuntu-24.04-standard_24.04-2_amd64.tar.zst",
-    "vmid": "112"
-}
-\end{minted}
+Setup commands run as root inside the container as it is required for some scenarios such as database initialisation, or user group changes. To ensure this does not cause unintentional changes, the model is instructed to express these commands through a \marginpar{TODO: complete paragraph}
 
 \section{Summary}\label{sec:summary}
-% Optional: short summary of the methodology. Omit if the chapter is already conciseq
+
+The final implementation satisfies the core aim of the project: it can generate an LLM-authored vulnerability specification, provision an isolated LXC container, inject generated artefacts, verify the challenge's basic health and flag protection, expose the environment to the user through SSH, support guided tutor interaction, and record the attempt in challenge history. The most important design decision is the structured specification boundary between the LLM and the infrastructure. This boundary makes the system extensible because new categories, verification checks, and evaluation modes can be added without giving the model direct control over the host.
+
+The main remaining limitations are also clear. Full exploit verification is optional and slower because it requires a disposable verifier container. The evaluation harness does not yet test the browser UI or tutor quality. The deployment networking model is assumed rather than fully automated in the application. Finally, a production-grade deployment would need further hardening and immediate cleanup after successful completion. These limitations are considered again in the evaluation and reflection chapters.

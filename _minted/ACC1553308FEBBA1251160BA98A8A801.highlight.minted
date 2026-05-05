@@ -1,0 +1,16 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{k}{export}\PYG{+w}{ }\PYG{k+kd}{const}\PYG{+w}{ }\PYG{n+nx}{VulnerabilitySpecSchema}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n+nx}{z}\PYG{p}{.}\PYG{n+nx}{object}\PYG{p}{(\PYGZob{}}
+\PYG{+w}{  }\PYG{n+nx}{title}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z.string}\PYG{p}{(),}
+\PYG{+w}{  }\PYG{n+nx}{description}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z.string}\PYG{p}{(),}
+\PYG{+w}{  }\PYG{n+nx}{category}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z.string}\PYG{p}{(),}
+\PYG{+w}{  }\PYG{n+nx}{difficulty}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z.enum}\PYG{p}{([}\PYG{l+s+s2}{\PYGZdq{}beginner\PYGZdq{}}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}intermediate\PYGZdq{}}\PYG{p}{,}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}advanced\PYGZdq{}}\PYG{p}{]),}
+\PYG{+w}{  }\PYG{n+nx}{hint}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z.string}\PYG{p}{(),}
+\PYG{+w}{  }\PYG{n+nx}{apt\PYGZus{}packages}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z.array}\PYG{p}{(}\PYG{n+nx}{AptPackageSchema}\PYG{p}{),}
+\PYG{+w}{  }\PYG{n+nx}{files}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z.array}\PYG{p}{(}\PYG{n+nx}{FileEntrySchema}\PYG{p}{).}\PYG{n+nx}{min}\PYG{p}{(}\PYG{l+m+mf}{1}\PYG{p}{),}
+\PYG{+w}{  }\PYG{n+nx}{services}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z.array}\PYG{p}{(}\PYG{n+nx}{ServiceSchema}\PYG{p}{),}
+\PYG{+w}{  }\PYG{n+nx}{setup\PYGZus{}commands}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z.array}\PYG{p}{(}\PYG{n+nx}{z}\PYG{p}{.}\PYG{k+kt}{string}\PYG{p}{()).}\PYG{k}{default}\PYG{p}{([]),}
+\PYG{+w}{  }\PYG{n+nx}{solution\PYGZus{}summary}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z.string}\PYG{p}{(),}
+\PYG{+w}{  }\PYG{n+nx}{attack\PYGZus{}vector}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{z.string}\PYG{p}{(),}
+\PYG{+w}{  }\PYG{n+nx}{validation}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{ValidationSpecSchema}\PYG{p}{,}
+\PYG{p}{\PYGZcb{});}
+\end{MintedVerbatim}
