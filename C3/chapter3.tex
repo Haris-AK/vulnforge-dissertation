@@ -413,7 +413,9 @@ When using a staging directory to push files, we have to use \lstinline{pct push
 
 Furthermore, we restart the services at the end again as during testing, we noticed that some setup commands to enable a site to run, create symlinks or modify configurations require the setup commands to run first, so we do this step again to ensure that the state is as expected. For example, without this, a web server would continue serving default configurations, rather than the intentionally vulnerable ones even though the files are present, by doing this final restart, we can ensure that post setup changes are loaded.
 
-Setup commands run as root inside the container as it is required for some scenarios such as database initialisation, or user group changes. To ensure this does not cause unintentional changes, the model is instructed to express these commands through a \marginpar{TODO: complete paragraph}
+Setup commands run as root inside the container as it is required for some scenarios such as database initialisation, or user group changes. To ensure this does not cause unintentional changes, the model is instructed to express these commands through an array, then the playbook loops through them.
+
+\section{Verification Implementation}\label{sec:verification-implementation}
 
 \section{Summary}\label{sec:summary}
 
