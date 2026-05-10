@@ -1,52 +1,15 @@
-% =============================================================================
-% CHAPTER 1: Introduction
-% =============================================================================
-% SPDX-FileCopyrightText: 2026 Frank Langbein <frank@langbein.org>
-% SPDX-License-Identifier: LPPL-1.3c
-%
-% Suggested sections: Motivation and context; Aims and objectives; Contributions;
-% Dissertation structure (roadmap). Optional: Scope (boundaries of the work),
-% Terminology or key terms. Start with a short chapter intro (no \section) before
-% the first section. This file also demonstrates template features; see
-% Section~\ref{sec:ch1-reference}. Remove that section for your own report.
-% =============================================================================
+\section{Introduction}\label{sec:introduction}
 
-% -----------------------------------------------------------------------------
-% Chapter intro (no section): one short paragraph before the first \section
-% -----------------------------------------------------------------------------
-This chapter introduces the dissertation. It outlines the motivation and context for the work, the aims and objectives, the main contributions, and the structure of the remaining chapters. The following sections expand on each of these.
+Cyber security is best learned through practice. Lectures, documentation, and written examples can explain the theory, but learners also need safe environments in which they can investigate systems, make mistakes, exploit weaknesses, and understand why those weaknesses exist. Capture the flag exercises and cyber ranges support this kind of hands on learning, but many platforms depend on fixed challenges. Once a challenge has been solved, shared, or memorised, its usefulness as a fresh learning exercise can decrease. This project explores whether generative artificial intelligence can help produce more varied and reusable practical cyber security training environments.
 
+VulnForge is an educational platform for generating and deploying short lived vulnerable Linux environments for capture the flag style exercises. The main aim of the project is to allow a learner to choose a vulnerability category and difficulty level, launch a new challenge, connect to it through SSH, exploit the vulnerability, submit a flag, and receive guidance from an integrated tutor. Instead of relying only on a fixed library of manually authored challenges, VulnForge uses a large language model as part of the challenge generation process.
 
-% -----------------------------------------------------------------------------
-% Motivation and context (typical first section)
-% -----------------------------------------------------------------------------
-% Use \section, \subsection, \label{key}. Refer with \ref{key} or \autoref{key}.
+The intended users of VulnForge are cyber security students, self directed learners, and educators who want repeatable practical exercises without needing to manually design every individual challenge. For learners, the benefit is repeated exposure to realistic vulnerability scenarios in a controlled setting. For educators, the project suggests a way to reduce the effort involved in creating variations of practical lab tasks. More broadly, the project investigates how generative AI can be used responsibly in cyber security education, not as a replacement for learning, but as a tool for creating varied training material and contextual support.
 
-\section{Motivation and context}\label{sec:motivation}
+The scope of the project is focused on a prototype suitable for a controlled educational lab environment. VulnForge is not intended to be a public cyber range, an enterprise security platform, or a complete replacement for existing capture the flag systems. It supports individual challenge attempts, temporary vulnerable containers, SSH based access, flag submission, basic progress tracking, and guided help. Features such as large scale class management, competitive team modes, browser based terminals, cloud deployment, and advanced monitoring are outside the main scope. This narrower focus allows the project to concentrate on the core technical question: whether AI generated vulnerable environments can be created, deployed, validated, used for learning, and removed in a safe and reliable way.
 
-% -----------------------------------------------------------------------------
-% Aims and objectives (typical second section)
-% -----------------------------------------------------------------------------
-% Use \citep{} (parenthetical) or \citet{} (narrative), not \cite.
+The approach combines web application development, infrastructure automation, container orchestration, and constrained use of generative AI. A web dashboard provides the learner facing interface for authentication, challenge selection, account settings, challenge history, flag submission, and tutor interaction. Behind the interface, the system generates a structured challenge specification, checks it against expected constraints, and uses automation tools to provision an Ubuntu LXC container through Proxmox. The vulnerable service is injected into the environment, the learner is given SSH access as a low privilege user, and validation checks are used to confirm that the challenge is usable and that the flag is not exposed trivially.
 
-\section{Aims and objectives}\label{sec:objectives}
+A key assumption behind the project is that AI generated output cannot be trusted without controls. The language model may produce invalid, unsafe, repetitive, or unsuitable content, so the system must treat generation as only one stage in a wider pipeline. This means that schema validation, deployment restrictions, privilege separation, and cleanup mechanisms are essential parts of the design. The project is therefore not simply about whether a large language model can generate vulnerable code, but whether such generation can be integrated into a safer educational workflow.
 
-% -----------------------------------------------------------------------------
-% Contributions (typical third section)
-% -----------------------------------------------------------------------------
-
-\section{Contributions}\label{sec:contributions}
-
-% -----------------------------------------------------------------------------
-% Dissertation structure / roadmap (typical final section of introduction)
-% -----------------------------------------------------------------------------
-
-\section{Dissertation structure}\label{sec:roadmap}
-
-
-% -----------------------------------------------------------------------------
-% Template reference (for authors: where to find package demos and conventions)
-% -----------------------------------------------------------------------------
-
-\section{Template reference}\label{sec:ch1-reference}
-
+The main outcome of the project is a working prototype that demonstrates the full lifecycle of an AI assisted cyber security training platform: generating a challenge, deploying an isolated vulnerable environment, allowing a learner to interact with it, supporting them through tutor guidance, validating flag submission, storing challenge history, and cleaning up resources afterwards. The project shows that this approach is technically feasible, but also highlights why AI generated security exercises require careful validation. VulnForge turns challenge creation from a manual authoring task into an automated lifecycle that can be constrained, tested, and evaluated. Dynamic generation can improve variety and replayability, but it introduces challenges around reliability, safety, exploit verification, and pedagogical quality. VulnForge therefore demonstrates both the promise and the risks of using generative AI to create practical cyber security education environments.

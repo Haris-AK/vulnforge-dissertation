@@ -437,7 +437,7 @@ Flag submission occurse through the route \lstinline{app/api/challenge/submit-fl
 The delete route is located in \lstinline{app/api/challenges/[id]/route.ts}. It requires the same authentication as before, marks the challenge as destroyed, and asynchronously invokes the container destruction. This is to help make sure the UI is responsive, even if the container deletion is slow for whatever reason. The TTL reaper on the Proxmox host is still present, acting as a safety net for infrastructure cleanup.
 
 
-\section{Tutor chatbot}\label{sec:tutor-chatbot}
+\subsection{Tutor chatbot}\label{sec:tutor-chatbot}
 
 \begin{figure}[htbp]
 	\centering
