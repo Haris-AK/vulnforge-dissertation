@@ -166,6 +166,8 @@ Container deployment is implemented through deploy.yml and the lxc_lifecycle rol
 The TypeScript deployContainer() wrapper executes ansible-playbook using execFile() rather than shell interpolation. Extra variables such as the SSH public key are passed as JSON. This reduces shell-injection risk and avoids quoting problems with SSH keys. The wrapper enables Ansible’s JSON callback, then parses the task output to extract the VMID, hostname, and IP address from the debug message printed by the playbook.  
 A key implementation issue was SSH key injection. Earlier approaches that interpolated key content into shell commands were fragile because public keys can contain spaces and comments. The final playbook writes the key to a temporary file on the host, uses pct push to place it into the container as authorized_keys, and then sets ownership and permissions for /home/student/.ssh. This is more reliable than building an echo 'key' > authorized_keys command.  
 **3.4.7 Vulnerability injection implementation**  
+**Diagram placement:** include the file-injection diagram here. It should show the TypeScript runner writing a temporary JSON specification, Ansible loading it, host-side staging, `pct push`, ownership/mode application, setup commands, and final service restart.  
+
 {width=75%}  
 The injection boundary is the VulnerabilitySpec. The TypeScript runner writes the spec to a temporary JSON file and passes its path to inject-vulnerability.yml. The playbook then:  
 1. Loads the JSON spec.  
@@ -184,6 +186,8 @@ The use of host-side staging and pct push is a critical implementation decision.
 The final service restart is another implementation lesson. Some generated setup commands enable sites, create symlinks, modify service configuration, or initialise application state after the first service restart. Without restarting services again, a web server might continue serving its default configuration even though the generated files exist. The second restart ensures that post-setup changes are loaded.  
 Setup commands are executed as root inside the container. This is powerful and necessary for some scenarios, such as database initialisation or user/group changes, but it also makes the prompt and policy constraints important. The model is instructed to express basic file state through the files array where possible and to use setup commands sparingly.  
 **3.4.8 Verification implementation**  
+**Diagram placement:** include the verification-system diagram here if it has not already appeared in the design section. It should show health checks, flag-protection checks, exploit checks, and the three execution contexts: `container_root`, `container_student`, and `external_http`.  
+
 Verification is implemented by verifyInjectedChallenge() and verify-vulnerability.yml. The TypeScript runner selects checks based on mode:  
 - health mode runs validation.health_checks and validation.flag_protection_checks;  
 - full mode additionally runs validation.exploit_checks.  
@@ -198,6 +202,8 @@ Flag submission is implemented in app/api/challenges/submit-flag/route.ts. The r
 The delete route in app/api/challenges/[id]/route.ts allows a user to end an active challenge manually. It marks the challenge as destroyed immediately and then invokes container destruction asynchronously. This makes the UI responsive even if the destroy playbook takes time or fails. The TTL reaper remains a safety net for infrastructure cleanup.  
 One implementation limitation is that successful flag submission updates the database state but does not immediately destroy the container. The container should still be removed by the host-side TTL reaper, but immediate destroy-on-completion would be a useful resource-saving improvement.  
 **3.4.11 Tutor and chat persistence implementation**  
+**Diagram placement:** include the tutor-chat-flow diagram near this section if the design section does not already contain it. The diagram should show: user message, active challenge check, private challenge context, OpenRouter call, leakage filter, streaming response, and message persistence.  
+
 The chat API accepts a message and challenge ID. It requires authentication, checks that the user has an active challenge, and checks that the request’s challenge ID matches that active challenge. This prevents a user from asking the tutor about another user’s challenge or about an inactive challenge through the interactive endpoint.  
 The route loads persisted message history, appends the new user message, and sends the conversation to OpenRouter with a system prompt containing the private challenge context. The assistant response is generated, checked for forbidden leakage, streamed back to the client as SSE token events, and then persisted together with the user message. Persistence happens only after a successful response so that failed streams do not create misleading history records.  
 The UI component ChatPanel loads previous messages on mount, streams new responses into an assistant message, and switches to read-only mode on history pages. The message repository inserts user/assistant message pairs inside a transaction, with a small timestamp offset to preserve ordering.  
@@ -208,6 +214,8 @@ The detail API returns the solution summary only for completed challenges. This 
 The project uses a Pino-backed logging facade in app/lib/logger.ts. Code emits structured event names such as challenge.launch.start, vulnerability.generation.success, verification.finish, container.deploy.success, flag.submit.checked, and chat.messages.persisted. This is more useful than unstructured console output because launch failures can be traced by following event names through the pipeline.  
 The logging facade sanitises sensitive fields recursively. Field names containing terms such as secret, password, token, key, and flag are redacted before being passed to Pino. This is important because the system handles API keys, SSH keys, flags, model outputs, and generated exploit data.  
 **3.4.14 Evaluation harness implementation**  
+**Diagram placement:** include the evaluation-harness diagram here or in the Evaluation chapter. In this chapter, use it to show how the harness is implemented. In the Evaluation chapter, use it to explain the experiments and results.  
+
 Although evaluation results belong in the Evaluation section, the updated repository now includes implementation support for collecting those results. The script scripts/evaluate.ts can be run with four modes:  
 | | |  
 |-|-|  
@@ -239,147 +247,4 @@ The one-active-challenge rule started as an application check, but application c
 The launch process spans the web server, LLM provider, Ansible, Proxmox, container commands, and database writes. Failures can therefore occur at many layers. Structured logging was added so that each stage emits consistent event names and relevant metadata while redacting sensitive values. This makes evaluation and debugging more systematic.  
 **3.6 Summary**  
 The final implementation satisfies the core aim of the project: it can generate an LLM-authored vulnerability specification, provision an isolated LXC container, inject the generated artefacts, verify the challenge’s basic health and flag protection, expose the environment to the user through SSH, support guided tutor interaction, and record the attempt in challenge history. The most important design decision is the use of a structured specification as the boundary between the LLM and the infrastructure. This boundary makes the system extensible because new categories, verification checks, and evaluation modes can be added without giving the model direct control over the host.  
-The main remaining limitations are also clear. Full exploit verification is optional and slower because it requires a disposable verifier container. The evaluation harness does not yet test the browser UI or tutor quality. The deployment networking model is assumed rather than fully automated in the application. Finally, a production-grade deployment should further harden container credentials and consider immediate cleanup after successful completion. These limitations do not undermine the core prototype, but they should be acknowledged in the Evaluation and Reflection sections.  
-### 3.4.7 Vulnerability injection implementation
-
-**Diagram placement:** include the file-injection diagram here. It should show the TypeScript runner writing a temporary JSON specification, Ansible loading it, host-side staging, `pct push`, ownership/mode application, setup commands, and final service restart.
-
-The injection boundary is the `VulnerabilitySpec`. The TypeScript runner writes the validated specification to a temporary JSON file and passes its path to `inject-vulnerability.yml`. The playbook then:
-
-1. loads the JSON spec;
-2. updates the apt cache inside the container;
-3. installs the requested packages;
-4. creates a temporary staging directory on the Proxmox host;
-5. writes each generated file into the staging directory;
-6. creates parent directories inside the container;
-7. copies files into the container with `pct push` using the specified modes;
-8. applies file ownership with `chown`;
-9. removes the staging directory;
-10. runs setup commands inside the container;
-11. restarts services after setup commands have completed.
-
-The use of host-side staging and `pct push` is a critical implementation decision. Generated application files can contain quotes, dollar signs, shell metacharacters, PHP code, SQL, HTML, or JavaScript. Writing them through shell-escaped `echo` commands would be error-prone and would make failures difficult to diagnose. By staging file content as real files and pushing them into the container, the playbook avoids most shell-escaping problems and makes generated file injection more reliable.
-
-The final service restart was added because some generated setup commands enable sites, create symlinks, modify service configuration, or initialise application state after the first service restart. Without restarting services again, a web server might continue serving its default configuration even though the generated files exist. This is a useful implementation example because it shows how a working infrastructure task can still produce an unusable challenge unless service behaviour is considered.
-
-Setup commands are executed as root inside the container. This is powerful and necessary for some scenarios, such as database initialisation or user/group changes, but it also increases risk. The prompt and policy constraints therefore instruct the model to express basic file state through the `files` array where possible and to use setup commands sparingly.
-
-### 3.4.8 Verification implementation
-
-**Diagram placement:** include the verification-system diagram here if it has not already appeared in the design section. It should show health checks, flag-protection checks, exploit checks, and the three execution contexts: `container_root`, `container_student`, and `external_http`.
-
-Verification is implemented by `verifyInjectedChallenge()` and `verify-vulnerability.yml`. The TypeScript runner selects checks based on mode:
-
-- `health` mode runs `validation.health_checks` and `validation.flag_protection_checks`;
-- `full` mode additionally runs `validation.exploit_checks`.
-
-Before execution, the runner substitutes placeholders such as `{{TARGET_IP}}`, `{{TARGET_URL}}`, `{{VMID}}`, and `{{FLAG}}`. It writes the selected checks to a temporary JSON file and invokes the verification playbook. The playbook executes each command in the requested context and returns results through Ansible JSON output. The runner then evaluates exit codes, required stdout/stderr strings, forbidden stdout strings, and whether the flag was recovered when `must_recover_flag` is true.
-
-Health-mode verification is used during normal user launches. If any health or flag-protection check fails, the launch route destroys the container and returns an error instead of inserting a challenge into the database. Full-mode verification is used by the evaluation harness and can optionally be used before launch on a disposable verifier container.
-
-The distinction between health verification and full verification is a design trade-off. Full verification gives stronger evidence that a generated challenge is actually solvable, but exploit checks may mutate the machine. For example, a privilege escalation exploit might add a file, change permissions, alter database state, or leave a web shell behind. Running that against the final user container could partially solve or damage the challenge before the learner begins. Disposable verifier containers avoid this problem at the cost of extra time and resource use.
-
-### 3.4.9 Challenge launch API implementation
-
-The launch route is implemented in `app/api/challenges/launch/route.ts`. It is structured around a streaming response. Authentication, SSH key validation, active challenge checks, and request-body validation happen before the stream starts, so ordinary errors can be returned as JSON. Once the long-running work begins, progress and errors are sent as Server-Sent Events.
-
-The route sends progress messages for generation, optional verification, deployment, injection, health verification, and finalisation. On success it returns the public challenge object and an SSH command. On failure it attempts to destroy any container that was already created. This cleanup path is important because a failure after deployment but before database insertion could otherwise leave broken vulnerable containers on the Proxmox host.
-
-The route also handles a subtle race condition. Because generation and provisioning may take a long time, the route re-checks for an active challenge immediately before inserting the new challenge. If another request has already inserted one, the duplicate container is cleaned up. The database partial unique index remains the strongest enforcement layer, but the re-check reduces wasted infrastructure.
-
-The route also handles stale active challenges. If an existing active challenge has passed its expiry time, the launch route attempts to destroy the old container and marks the challenge as expired before continuing. This avoids blocking a user from launching a new challenge because a previous expired challenge was not cleaned up yet.
-
-### 3.4.10 Flag submission and manual destruction
-
-Flag submission is implemented in `app/api/challenges/submit-flag/route.ts`. The route validates the request body, checks that the challenge exists and belongs to the authenticated user, verifies that it is still active, checks expiry, and compares the submitted flag with the stored flag. If the flag is correct, the challenge is marked as `completed`.
-
-The delete route in `app/api/challenges/[id]/route.ts` allows a user to end an active challenge manually. It marks the challenge as `destroyed` immediately and then invokes container destruction asynchronously. This makes the UI responsive even if the destroy playbook takes time or fails. The TTL reaper remains a safety net for infrastructure cleanup.
-
-One implementation limitation is that successful flag submission updates the database state but does not immediately destroy the container. The container should still be removed by the host-side TTL reaper, but immediate destroy-on-completion would be a useful resource-saving improvement and should be discussed as a limitation or future improvement.
-
-### 3.4.11 Tutor and chat persistence implementation
-
-**Diagram placement:** include the tutor-chat-flow diagram near this section if the design section does not already contain it. The diagram should show: user message, active challenge check, private challenge context, OpenRouter call, leakage filter, streaming response, and message persistence.
-
-The chat API accepts a message and challenge ID. It requires authentication, checks that the user has an active challenge, and checks that the request's challenge ID matches that active challenge. This prevents a user from asking the tutor about another user's challenge or about an inactive challenge through the interactive endpoint.
-
-The route loads persisted message history, appends the new user message, and sends the conversation to OpenRouter with a system prompt containing the private challenge context. The assistant response is generated, checked for forbidden leakage, streamed back to the client as SSE token events, and then persisted together with the user message. Persistence happens only after a successful response so that failed streams do not create misleading history records.
-
-The UI component `ChatPanel` loads previous messages on mount, streams new responses into an assistant message, and switches to read-only mode on history pages. The message repository inserts user/assistant message pairs inside a transaction, with a small timestamp offset to preserve ordering.
-
-This implementation choice turns the tutor into part of the learning artefact rather than only a temporary interface feature. A learner can review how they approached a challenge, what hints they asked for, and how the tutor guided them.
-
-### 3.4.12 Challenge history implementation
-
-Challenge history is implemented with a history API, a list page, a detail API, a read-only challenge detail component, and read-only chat display. The list page shows each challenge's title, category, difficulty, status, creation time, and message count. Active challenges link back to the dashboard. Non-active challenges open a detail view.
-
-The detail API returns the solution summary only for completed challenges. This supports post-solve learning while keeping the active-challenge experience constrained. Expired and destroyed challenges can still show their metadata and tutor conversation, but they do not expose the solution summary by default.
-
-This distinction should be made clear in the report because it explains the educational design: the system gives guidance during the attempt, but reserves the full explanation for review after a successful solve.
-
-### 3.4.13 Logging implementation
-
-The project uses a Pino-backed logging facade in `app/lib/logger.ts`. Code emits structured event names such as `challenge.launch.start`, `vulnerability.generation.success`, `verification.finish`, `container.deploy.success`, `flag.submit.checked`, and `chat.messages.persisted`. This is more useful than unstructured console output because launch failures can be traced by following event names through the pipeline.
-
-The logging facade sanitises sensitive fields recursively. Field names containing terms such as `secret`, `password`, `token`, `key`, and `flag` are redacted before being passed to Pino. This is important because the system handles API keys, SSH keys, flags, model outputs, and generated exploit data.
-
-This section is worth keeping because it demonstrates how implementation decisions support debugging, evaluation, and safer handling of sensitive data.
-
-### 3.4.14 Evaluation harness implementation
-
-**Diagram placement:** include the evaluation-harness diagram here or in the Evaluation chapter. In this chapter, use it to show how the harness is implemented. In the Evaluation chapter, use it to explain the experiments and results.
-
-Although evaluation results belong in the Evaluation section, the repository includes implementation support for collecting those results. The script `scripts/evaluate.ts` can be run with four modes:
-
-| Mode | Purpose |
-|---|---|
-| `static` | Generate and validate specs without Proxmox. |
-| `deploy` | Deploy and destroy a blank container to test orchestration. |
-| `inject` | Generate, deploy, inject, run health/flag-protection verification, and destroy. |
-| `full` | Generate, deploy, inject, run health, flag-protection, and exploit verification, then destroy. |
-
-The harness writes `results.json`, `results.csv`, `summary.md`, and private `generated-specs/*.json` artefacts. These outputs are designed to support later evaluation of generation reliability, deployment reliability, injection reliability, verification pass rates, exploit recovery, cleanup, timing, and diversity. Generated specs include flags and exploit details, so they should be treated as sensitive and not published with the user-facing system.
-
-The harness does not yet test the browser UI or tutor quality. Those remain evaluation limitations or future work unless separate tests are added.
-
-## 3.5 Design evolution and implementation problems
-
-The final design evolved significantly during implementation. These changes are important to include because they show how practical constraints shaped the final system rather than presenting the design as if it appeared fully formed.
-
-### 3.5.1 From direct LLM text to structured specifications
-
-A natural first approach would be to ask the model to generate files or commands directly and then execute them. This is unsafe and hard to debug. The implemented approach instead forces the model to return a structured specification. Zod validation, JSON parsing, and policy validation create a contract between the LLM and the rest of the platform. This made it possible to add injection, verification, and evaluation without giving the model direct control of the host.
-
-### 3.5.2 From LLM-generated flags to server-generated flags
-
-Earlier design notes describe a model-generated flag and flag location. The final system generates the flag server-side and prompts the model to embed that exact value. This gives the platform a reliable flag format and a known answer for the flag checker. The trade-off is that the platform must verify that the model actually embedded the flag correctly and did not expose it directly. The added validation and optional full verification pipeline address this weakness.
-
-### 3.5.3 From root access to a non-root student model
-
-If students connected as root, privilege escalation and file-permission challenges would be meaningless because the user could already read most sensitive files. The container lifecycle role therefore creates a `student` user and injects the user's SSH key into that account. The system prompt also tells the LLM that the `student` user already exists and must not be recreated. This fixed a practical failure mode where generated setup commands attempted to run `useradd student` and then failed because the account had already been created by the platform.
-
-### 3.5.4 From synchronous launch to streamed progress
-
-Container provisioning and LLM generation are too slow and unpredictable for a simple request/response user experience. The launch route now streams progress using Server-Sent Events. This does not make the backend work faster, but it makes long launches understandable to the user and helps distinguish between generation, deployment, injection, verification, and finalisation failures.
-
-### 3.5.5 From Ansible success to challenge verification
-
-Ansible can report success even when the resulting challenge is not educationally valid. For example, all files may be copied but the web server may still serve the default page, or the flag may be readable without exploitation. The verification pipeline was added to close this gap. Normal launches now require non-destructive health and flag-protection checks. Full exploit checks are available through disposable containers and the evaluation harness.
-
-### 3.5.6 From in-memory tutor state to persisted learning history
-
-An in-memory chat is simple but loses the learning process when the page refreshes or the challenge ends. The final system stores messages in a `messages` table linked to the challenge. This supports continuity during the attempt and review after the attempt. It also makes the tutor part of the user's learning artefact rather than a temporary UI feature.
-
-### 3.5.7 From application-only active challenge checks to database enforcement
-
-The one-active-challenge rule started as an application check, but application checks alone can race. Two requests can both see no active challenge, both spend time generating and deploying containers, and both attempt to insert. The final design adds a partial unique database index and a re-check before insertion. This does not eliminate all wasted work in a race, but it prevents the database from ending up with two active challenges for the same user.
-
-### 3.5.8 From ad-hoc debugging to structured logging
-
-The launch process spans the web server, LLM provider, Ansible, Proxmox, container commands, and database writes. Failures can therefore occur at many layers. Structured logging was added so that each stage emits consistent event names and relevant metadata while redacting sensitive values. This makes evaluation and debugging more systematic.
-
-## 3.6 Summary
-
-The final implementation satisfies the core aim of the project: it can generate an LLM-authored vulnerability specification, provision an isolated LXC container, inject the generated artefacts, verify the challenge's basic health and flag protection, expose the environment to the user through SSH, support guided tutor interaction, and record the attempt in challenge history. The most important design decision is the use of a structured specification as the boundary between the LLM and the infrastructure. This boundary makes the system extensible because new categories, verification checks, and evaluation modes can be added without giving the model direct control over the host.
-
 The main remaining limitations are also clear. Full exploit verification is optional and slower because it requires a disposable verifier container. The evaluation harness does not yet test the browser UI or tutor quality. The deployment networking model is assumed rather than fully automated in the application. Finally, a production-grade deployment should further harden container credentials, improve network segmentation, and consider immediate cleanup after successful completion. These limitations do not undermine the core prototype, but they should be acknowledged in the Evaluation and Reflection sections.

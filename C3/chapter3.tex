@@ -141,7 +141,7 @@ The database contains four main entities: users, sessions, challenges, and messa
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{figures/database_schema.pdf}
+	\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{figures/data_model.pdf}
 	\caption{Database schema}
 	\label{fig:db_schema}
 \end{figure}
@@ -177,7 +177,7 @@ The challenge lifecycle is deliberately simple from the learner's perspective bu
 
 \begin{figure}[htbp]
 	\centering
-	\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{figures/challenge_lifecycle.pdf}
+	\includegraphics[width=\linewidth,height=0.82]{figures/challenge_lifecycle.png}
 	\caption{Challenge lifecycle}
 	\label{fig:challenge_lifecycle}
 \end{figure}
@@ -212,9 +212,10 @@ The LLM does not directly control the infrastructure. Instead, it produces a str
 	\label{fig:generation_policy}
 \end{figure}
 
-The specification includes public challenge metadata, deployment instructions, private learning metadata, and private verification metadata. An abbreviated version of the schema boundary is:
+The specification includes public challenge metadata, deployment instructions, private learning metadata, and private verification metadata. Listing~\ref{lst:vulnerability-spec-schema} shows an abbreviated version of the schema boundary.
 
-\begin{lstlisting}
+\begin{listing}[htbp]
+	\begin{minted}{TypeScript}
 export const VulnerabilitySpecSchema = z.object({
   title: z.string(),
   description: z.string(),
@@ -229,7 +230,10 @@ export const VulnerabilitySpecSchema = z.object({
   attack_vector: z.string(),
   validation: ValidationSpecSchema,
 });
-\end{lstlisting}
+	\end{minted}
+	\caption{Abbreviated version of VulnerabilitySpecSchema}
+	\label{lst:vulnerability-spec-schema}
+\end{listing}
 
 The choice to use structured output is central to the design. A free-text response from the LLM would be difficult to validate and dangerous to execute. A typed specification creates a contract between the model and the infrastructure pipeline. The rest of the system consumes files, packages, services, setup commands, and validation checks as structured fields rather than interpreting arbitrary natural language.
 
@@ -294,21 +298,8 @@ Messages are persisted after a complete assistant response. This supports contin
 
 The history page increases the educational value of the platform beyond a single active challenge. The history API returns previous challenges for the authenticated user, with message counts and status information.
 
-\begin{figure}[htbp]
-	\centering
-	\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/history-overview.png}
-	\caption{Overview of user history}
-	\label{fig:history-overview}
-\end{figure}
 
 Completed challenges include the solution summary for learning review. Active challenges do not expose it. This creates a distinction between guidance during an attempt and explanation after a successful solve. It also makes the tutor conversation part of the learning record rather than a temporary front-end-only state.
-
-\begin{figure}[htbp]
-	\centering
-	\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/history-challenge.png}
-	\caption{History of a specific challenge}
-	\label{fig:history-challenge}
-\end{figure}
 
 \section{Implementation}\label{sec:impl}
 
@@ -394,7 +385,7 @@ The TypeScript wrapper executes \lstinline|ansible-playbook| using \lstinline|ex
 
 The injection boundary is defined inside the \lstinline{VulnerabilitySpec}, with the TypeScript runner writing this spec to a temporary JSON file, then passing it to the \lstinline{inject-vulnerability.yml} plyabook. The playbook does the following:
 
-\\begin{enumerate}
+\begin{enumerate}
 	\item Validates inputs such as VMID and the spec file
 	\item Loads the JSON spec file
 	\item Updates the APT cache so packages are up to date
@@ -415,10 +406,138 @@ Furthermore, we restart the services at the end again as during testing, we noti
 
 Setup commands run as root inside the container as it is required for some scenarios such as database initialisation, or user group changes. To ensure this does not cause unintentional changes, the model is instructed to express these commands through an array, then the playbook loops through them.
 
-\section{Verification Implementation}\label{sec:verification-implementation}
+\subsection{Verification Implementation}\label{sec:verification-implementation}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{figures/verification.pdf}
+	\caption{Verification diagram}
+	\label{fig:verification-diagram}
+\end{figure}
+
+Verification is implemented with the \lstinline{verifyInjectedChallenge()} method and the \lstinline{verify-vulnerability.yml} playbook. The TypeScript runner checks to see what level of checks to run based on the health mode. \lstinline{health} mode runs the \lstinline{validation.health_checks} and the \lstinline{validation.flag_protection_checks} methods. If we run on \lstinline{full} mode, it also runs the \lstinline{validation.exploit_checks} method. This takes substantially more time, but is largely used during testing to ensure a type of vulnerability works as expctected, but will not run each time a user decides to spin up a machine.
+
+Before execution, the runner substitutes values such as \lstinline{TARGET_IP}, \lstinline{VMID}, \lstinline{TARGET_URL} and \lstinline{FLAG}. It will write the checks to a temporary JSON file and then call the verification playbook. The playbook will go through each command, run them, and return the result of the command in JSON. The runner will evaluate the exit codes of the commands, any required stdout / stderr, forbidden stdout strings, and whether the flag was able to be recovered if the \lstinline{must_recover_flag} is true.
+
+\marginpar{During testing, we noticed that with some vulnerabilities such as privilege esscalation, using this flag would cause some issues when it would be accessible by the}
+
+As mentioned previously, the health mode check is used during regular launches. If any of these fail, then the launch route will destroy the container and return an error instead of writing a challenge to the database. Full mode verification is optionally used, often during evaluation. Another reason why we do not use it during regular launches is that some of the exploit checks can mutate the state of the machine, for example, when testing it may alter \lstinline{etc/passwd}, and having that in the users container would damage the integrity of the challenge. To partially mitigate this, there is a desposable 'verifier' container used, but this 'verifier' container can still end up modifying the challenge contanier.
+
+\subsection{Challenge Launch Implementation}\label{sec:challenge-launch_implementation}
+
+The launch route is located in \lstinline{app/api/challenge/launch/route.ts}. It uses server sent events to continually update the user as to the state of the challenge whilst it is being created. Authentication, SSH key validation, active challenge checks, and request validation occur before we being the stream to the user. Once the user has selected a type of challenge, and difficulty, and we have done all the verification on the backend, the stream begins, and the user receives progress and errors relating to the challenge.
+
+The progress messages relate to generation, verficiation, deployment, injection, and health verification. On success, it returns the challenge object with the SSH command the user would use, on failure, it attempts to destroy the container, and returns an error message to the user. It also handles a race condition, as generation and injection can take a while, the route checks again for an active challenge immediately before inserting a new challenge. If there is another challenge which has been inserted into the database, the duplicate is cleaned up.
+
+This route also handles stale active challenges. If an existing active challenge is past the expiration time, the launch route firstly attempts to destroy it and marks the challenge as incomplete before the user continues. This avoids stopping a user from creating a new challenge if a previously expired one is just left without being cleaned up for whatever reaosn.
+
+\subsection{Flag submission and cleanup}\label{sec:flag-submission-and-cleanup}
+Flag submission occurse through the route \lstinline{app/api/challenge/submit-flag/route.ts}. This route validates the request body (including checking if the user / request is authenticated), checks the challenge exists and belongs to the current user, verifies that it is still active, and compares the submitted flag to the stored flag. If it is correct, the challenge is marked as complete, and the challenge is destroyed.
+
+The delete route is located in \lstinline{app/api/challenges/[id]/route.ts}. It requires the same authentication as before, marks the challenge as destroyed, and asynchronously invokes the container destruction. This is to help make sure the UI is responsive, even if the container deletion is slow for whatever reason. The TTL reaper on the Proxmox host is still present, acting as a safety net for infrastructure cleanup.
+
+
+\section{Tutor chatbot}\label{sec:tutor-chatbot}
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{figures/tutor_chat_flow.pdf}
+	\caption{Tutor chatbot flow}
+	\label{fig:tutor-chatbot-flow}
+\end{figure}
+
+The tutor chatbot is shown to a user once they are one the dashboard screen. The API accepts a message and challenge ID, requiring authentication, a user to have an active challenge, and that the request challenge ID matches the active challenge ID. This prevents a user from asking the tutor about another users challenge or an inactive challenge. The route loads the persisted message history, appending the new user message, and sends the conversation to OpenRouter with a system prompt that specifies that it should not leak private challenge context. The response is generated, checked for any forbidden data leaks, streamed back to the client, and then persisted with the user message. It is important to note that the persistence of messages only occurs after a successful response, so any failed streams do not result in misleading historical chat logs.
+
+The UI component, named \lstinline{ChatPanel} loads previous messages once the component is mounted, streams the new response into the assistant message (the chatbot), and then if the user is on a history page, it is marked as read only. The message repository which handles all this inserts user assistant messages as pairs inside each transaction, with a timestamp to preserve the order of messages. So each transaction to insert a message has to have a user message and assistant message.
+
+\subsection{Challenge history and implementation}\label{sec:challenge-history-implementation}
+
+The challenge history page uses an internal API that displays a list of challenges a user has undertaken, a detail API for each specific challenge, and a read only component for chatbot history. The list of challenges page displays each challenge's difficulty, status, creation time, and message count. Active challenges will just link back to the dashboard of the challenge, with non active challenges opening a detailed view.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/history-overview.png}
+	\caption{Overview of user history}
+	\label{fig:history-overview}
+\end{figure}
+
+
+The individual view returns the solution summary for histroical challenges. This is to support post challenge learning, so if you were unable to complete the challenge, you can see how you were meant to approach it, and take that learning to the next challenge. You are also shown metadata from the challenge alongside tutor history to help give context to how you approached the challenge the first time, and if successful, it allows you to see what type of questions you should ask.
+
+\begin{figure}[htbp]
+	\centering
+	\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{images/history-challenge.png}
+	\caption{Individual challenge history with solution summary}
+	\label{fig:history-individual-challenge}
+\end{figure}
+
+\subsection{Logging}\label{sec:logging}
+
+VulnForge uses Pino for logging. Methods emit structured events based on their names (e.g. \lstinline{challenge.launch_start}). This helps identify any launch failures as we can trace it to the exact method that fails. We ensure to sanitise sensitive fields, for example, \lstinline{password},\lstinline{flag}, \lstinline{token} and other keywords are recursively redacted before being passed into Pino.
+
+\begin{listing}[htbp]
+	\begin{minted}{TypeScript}
+    function sanitize(value: unknown, seen: WeakSet<object> = new WeakSet(), depth = 0): unknown {
+  if (value instanceof Error) {
+    return {
+      name: value.name,
+      message: value.message,
+      stack: process.env.NODE_ENV === "development" ? value.stack : undefined,
+    };
+  }
+
+  if (!value || typeof value !== "object") return value;
+
+  if (seen.has(value)) return "[circular]";
+  if (depth >= MAX_SANITIZE_DEPTH) return "[max-depth-exceeded]";
+
+  seen.add(value);
+
+  try {
+    if (Array.isArray(value)) {
+      return value.map((nestedValue) => sanitize(nestedValue, seen, depth + 1));
+    }
+
+    const result: LogFields = {};
+    for (const [key, nestedValue] of Object.entries(value)) {
+      if (isSensitiveField(key)) {
+        result[key] = "[redacted]";
+      } else {
+        result[key] = sanitize(nestedValue, seen, depth + 1);
+      }
+    }
+    return result;
+  } finally {
+    seen.delete(value);
+  }
+}
+	\end{minted}
+	\caption{Recursive implementation of sanitising logs}
+	\label{lst:recursive-logs}
+\end{listing}
+
+The above method is the recursive one used for safe logging. It walks through the fields passed in, primitive and undefined values are returned unchanged. Error objects are converted into more concise objects, with extra information such as stack traces. For arrays, the method calls itself on each element, replacing the value with \lstinline{"[redacted]"}, including nested values. To protect itself from unsafe recursion, we use a \lstinline{WeakSet} which stores objects currently being visited, and if there are duplicates, it returns \lstinline{"[circular]"} to stop infinite recursion. There is also a max depth limit, currently 25, that leads to the function returning \lstinline{"[max-depth-exceeded]"}.
+
+\section{Design evolution and implementation problems}\label{sec:implementation-problems}
+
+\subsection{Structured LLM output}\label{sec:llm-output}
+
+Initially, we just asked the model to generate a set of files and commands to run on the container, then attempted to execute them, but it soon became clear that this was unsafe, difficult to debug, and often failed. Instead, we moved towards the strucutred specification that the model must follow, with validation from Zod, parsing the JSON and policy validation to have a sort of 'contract' with the model. This made the responses much more reliable, and made it much easier to inject, verify and evaluate the vulnerability, without having to redesign the entire application.
+
+\subsection{Model generated flags to server side flags}\label{sec:flag-generation}
+
+We started with the model generating the flag during injection, but this led to an issue. When we log the machine and vulnerability, Ansible needs the flag, however, when the LLM would embed it in something other than a file, for example in a database for a SQL injection, it would struggle to retrieve the flag. So instead, we generate the flag server side, and prompt the model to embed this exact value. This makes the format more reliable, however, we must verify the model embeds the exact flag we provided. To do this, we have schema and policy validation in the LLMs response, flag protection checks and optional full verification checks which ensures the exact flag is embedded as described.
+
+\subsection{Streaming progress}\label{sec:streaming-progress}
+
+The container provisioning, and LLM generation were quite slow when we started. It started off as a syncrhonous task, and displayed to the user as so, but it soon became apparent this was too slow. The launch route instead moved to server sent events, making the long launches more understanble from the users perspective as it progresses from deployment, injection, and verification.
+
+\subsection{In memory tutor state to persisted messages}\label{sec:tutor-state}
+
+We started off with an in memory chat that was just used in the individual challenge. However, this did harm the learning process when the page refreshes as you would lose the past messages. It also prevented you from reflecting on past messages. Instead, storing them in the database meant we could save them when the user refreshes, and also in the history page. This supports the continuity of learning during and after the attempt, making it a record of learning rather than just as assistant.
 
 \section{Summary}\label{sec:summary}
 
-The final implementation satisfies the core aim of the project: it can generate an LLM-authored vulnerability specification, provision an isolated LXC container, inject generated artefacts, verify the challenge's basic health and flag protection, expose the environment to the user through SSH, support guided tutor interaction, and record the attempt in challenge history. The most important design decision is the structured specification boundary between the LLM and the infrastructure. This boundary makes the system extensible because new categories, verification checks, and evaluation modes can be added without giving the model direct control over the host.
+The final implementation satisfies the core aim of the project: it can generate an LLM authored vulnerability specification, provision an isolated LXC container, inject generated artefacts, verify the challenge's basic health and flag protection, expose the environment to the user through SSH, support guided tutor interaction, and record the attempt in challenge history. The most important design decision is the structured specification boundary between the LLM and the infrastructure. This boundary makes the system extensible because new categories, verification checks, and evaluation modes can be added without giving the model direct control over the host.
 
-The main remaining limitations are also clear. Full exploit verification is optional and slower because it requires a disposable verifier container. The evaluation harness does not yet test the browser UI or tutor quality. The deployment networking model is assumed rather than fully automated in the application. Finally, a production-grade deployment would need further hardening and immediate cleanup after successful completion. These limitations are considered again in the evaluation and reflection chapters.
+The main remaining limitations are also clear. Full exploit verification is optional and slower because it requires a disposable verifier container. The deployment networking model is assumed rather than fully automated in the application. Finally, a production-grade deployment would need further hardening and immediate cleanup after successful completion. These limitations are considered again in the evaluation and reflection chapters.

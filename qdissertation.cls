@@ -117,7 +117,7 @@
 % Use roman numerals (i, ii, ...) for front matter from the very first page,
 % and treat the document as front matter until \mainmatter is called.
 % In front matter: sections unnumbered (secnumdepth -1), TOC to chapter level only (tocdepth 0).
-% Close LOF/LOT/LOA write streams after .aux was read so \listoffigures etc.\ can read the files.
+% Close LOF/LOT/LOA write streams after .aux was read so list commands can read the files.
 \AtBeginDocument{%
   \@ifundefined{qdissertation@opened@lof}{}{\immediate\closeout\tf@lof}%
   \@ifundefined{qdissertation@opened@lot}{}{\immediate\closeout\tf@lot}%
@@ -1098,7 +1098,7 @@
 }
 
 % Full front-matter sequence: title page, optional copyright page, abstract,
-% then \frontlists (TOC, List of Figures, List of Tables, List of Algorithms, List of Acronyms).
+% then \frontlists (TOC, List of Figures, List of Tables, List of Listings, List of Algorithms, List of Acronyms).
 \renewcommand{\maketitle}[1]{%
   \maketitlepage
   \ifqdissertation@license
@@ -1115,10 +1115,9 @@
 }
 
 % ------------------------------------------------------------------------------
-% Front matter: TOC and optional lists of figures, tables, algorithms
+% Front matter: TOC and optional lists of figures, tables, listings, algorithms
 % ------------------------------------------------------------------------------
-% We scan .lof/.lot/.loa (populated when .aux was read via our \@writefile patch)
-% and only output each list if it has at least one entry.
+% We scan optional list files before conditionally outputting optional lists.
 
 \newif\ifqdissertation@haslof
 \newif\ifqdissertation@haslot
@@ -1161,7 +1160,6 @@
     \IfFileExists{\jobname.loa}{\input{\jobname.loa}}{}%
   \endgroup
 }
-
 \newcommand{\frontlists}{%
   \tableofcontents
   \cleardoublepage
@@ -1174,6 +1172,11 @@
   \listoftables
   \addcontentsline{toc}{chapter}{List of Tables}%
   \cleardoublepage
+  \@ifundefined{listoflistings}{}{%
+    \listoflistings
+    \addcontentsline{toc}{chapter}{List of Listings}%
+    \cleardoublepage
+  }%
   \qdissertation@checkloa
   \ifqdissertation@hasloa
     \listofalgorithms

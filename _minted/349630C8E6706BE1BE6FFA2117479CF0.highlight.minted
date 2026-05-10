@@ -1,0 +1,36 @@
+\begin{MintedVerbatim}[commandchars=\\\{\}]
+\PYG{+w}{    }\PYG{k+kd}{function}\PYG{+w}{ }\PYG{n+nx}{sanitize}\PYG{p}{(}\PYG{n+nx}{value}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{unknown}\PYG{p}{,}\PYG{+w}{ }\PYG{n+nx}{seen}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{WeakSet}\PYG{o}{\PYGZlt{}}\PYG{n+nx}{object}\PYG{o}{\PYGZgt{}}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{o+ow}{new}\PYG{+w}{ }\PYG{n+nb}{WeakSet}\PYG{p}{(),}\PYG{+w}{ }\PYG{n+nx}{depth}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+m+mf}{0}\PYG{p}{)}\PYG{o}{:}\PYG{+w}{ }\PYG{n+nx}{unknown}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{  }\PYG{k}{if}\PYG{+w}{ }\PYG{p}{(}\PYG{n+nx}{value}\PYG{+w}{ }\PYG{o+ow}{instanceof}\PYG{+w}{ }\PYG{n+ne}{Error}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{    }\PYG{k}{return}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{      }\PYG{n+nx}{name}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{value.name}\PYG{p}{,}
+\PYG{+w}{      }\PYG{n+nx}{message}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{value.message}\PYG{p}{,}
+\PYG{+w}{      }\PYG{n+nx}{stack}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{process.env.NODE\PYGZus{}ENV}\PYG{+w}{ }\PYG{o}{===}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}development\PYGZdq{}}\PYG{+w}{ }\PYG{o}{?}\PYG{+w}{ }\PYG{n+nx}{value.stack}\PYG{+w}{ }\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{undefined}\PYG{p}{,}
+\PYG{+w}{    }\PYG{p}{\PYGZcb{};}
+\PYG{+w}{  }\PYG{p}{\PYGZcb{}}
+
+\PYG{+w}{  }\PYG{k}{if}\PYG{+w}{ }\PYG{p}{(}\PYG{o}{!}\PYG{n+nx}{value}\PYG{+w}{ }\PYG{o}{||}\PYG{+w}{ }\PYG{o+ow}{typeof}\PYG{+w}{ }\PYG{n+nx}{value}\PYG{+w}{ }\PYG{o}{!==}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}object\PYGZdq{}}\PYG{p}{)}\PYG{+w}{ }\PYG{k}{return}\PYG{+w}{ }\PYG{n+nx}{value}\PYG{p}{;}
+
+\PYG{+w}{  }\PYG{k}{if}\PYG{+w}{ }\PYG{p}{(}\PYG{n+nx}{seen}\PYG{p}{.}\PYG{n+nx}{has}\PYG{p}{(}\PYG{n+nx}{value}\PYG{p}{))}\PYG{+w}{ }\PYG{k}{return}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}[circular]\PYGZdq{}}\PYG{p}{;}
+\PYG{+w}{  }\PYG{k}{if}\PYG{+w}{ }\PYG{p}{(}\PYG{n+nx}{depth}\PYG{+w}{ }\PYG{o}{\PYGZgt{}=}\PYG{+w}{ }\PYG{n+nx}{MAX\PYGZus{}SANITIZE\PYGZus{}DEPTH}\PYG{p}{)}\PYG{+w}{ }\PYG{k}{return}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}[max\PYGZhy{}depth\PYGZhy{}exceeded]\PYGZdq{}}\PYG{p}{;}
+
+\PYG{+w}{  }\PYG{n+nx}{seen}\PYG{p}{.}\PYG{n+nx}{add}\PYG{p}{(}\PYG{n+nx}{value}\PYG{p}{);}
+
+\PYG{+w}{  }\PYG{k}{try}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{    }\PYG{k}{if}\PYG{+w}{ }\PYG{p}{(}\PYG{n+nb}{Array}\PYG{p}{.}\PYG{n+nx}{isArray}\PYG{p}{(}\PYG{n+nx}{value}\PYG{p}{))}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{      }\PYG{k}{return}\PYG{+w}{ }\PYG{n+nx}{value}\PYG{p}{.}\PYG{n+nx}{map}\PYG{p}{((}\PYG{n+nx}{nestedValue}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{=\PYGZgt{}}\PYG{+w}{ }\PYG{n+nx}{sanitize}\PYG{p}{(}\PYG{n+nx}{nestedValue}\PYG{p}{,}\PYG{+w}{ }\PYG{n+nx}{seen}\PYG{p}{,}\PYG{+w}{ }\PYG{n+nx}{depth}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{l+m+mf}{1}\PYG{p}{));}
+\PYG{+w}{    }\PYG{p}{\PYGZcb{}}
+
+\PYG{+w}{    }\PYG{k+kd}{const}\PYG{+w}{ }\PYG{n+nx}{result}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{LogFields}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{p}{\PYGZob{}\PYGZcb{};}
+\PYG{+w}{    }\PYG{k}{for}\PYG{+w}{ }\PYG{p}{(}\PYG{k+kd}{const}\PYG{+w}{ }\PYG{p}{[}\PYG{n+nx}{key}\PYG{p}{,}\PYG{+w}{ }\PYG{n+nx}{nestedValue}\PYG{p}{]}\PYG{+w}{ }\PYG{k}{of}\PYG{+w}{ }\PYG{n+nb}{Object}\PYG{p}{.}\PYG{n+nx}{entries}\PYG{p}{(}\PYG{n+nx}{value}\PYG{p}{))}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{      }\PYG{k}{if}\PYG{+w}{ }\PYG{p}{(}\PYG{n+nx}{isSensitiveField}\PYG{p}{(}\PYG{n+nx}{key}\PYG{p}{))}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{        }\PYG{n+nx}{result}\PYG{p}{[}\PYG{n+nx}{key}\PYG{p}{]}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+s+s2}{\PYGZdq{}[redacted]\PYGZdq{}}\PYG{p}{;}
+\PYG{+w}{      }\PYG{p}{\PYGZcb{}}\PYG{+w}{ }\PYG{k}{else}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{        }\PYG{n+nx}{result}\PYG{p}{[}\PYG{n+nx}{key}\PYG{p}{]}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{n+nx}{sanitize}\PYG{p}{(}\PYG{n+nx}{nestedValue}\PYG{p}{,}\PYG{+w}{ }\PYG{n+nx}{seen}\PYG{p}{,}\PYG{+w}{ }\PYG{n+nx}{depth}\PYG{+w}{ }\PYG{o}{+}\PYG{+w}{ }\PYG{l+m+mf}{1}\PYG{p}{);}
+\PYG{+w}{      }\PYG{p}{\PYGZcb{}}
+\PYG{+w}{    }\PYG{p}{\PYGZcb{}}
+\PYG{+w}{    }\PYG{k}{return}\PYG{+w}{ }\PYG{n+nx}{result}\PYG{p}{;}
+\PYG{+w}{  }\PYG{p}{\PYGZcb{}}\PYG{+w}{ }\PYG{k}{finally}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{+w}{    }\PYG{n+nx}{seen}\PYG{p}{.}\PYG{o+ow}{delete}\PYG{p}{(}\PYG{n+nx}{value}\PYG{p}{);}
+\PYG{+w}{  }\PYG{p}{\PYGZcb{}}
+\PYG{p}{\PYGZcb{}}
+\end{MintedVerbatim}

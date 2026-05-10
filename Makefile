@@ -39,7 +39,7 @@ help:
 # latexmk command for LuaLaTeX with nonstopmode + file-line-error
 LATEXMK = latexmk
 LATEXMK_ENGINE = -lualatex
-LATEXMK_CMD = -lualatex="lualatex -interaction=nonstopmode -file-line-error %O %S"
+LATEXMK_CMD = -lualatex="lualatex -interaction=nonstopmode -file-line-error -shell-escape %O %S"
 LATEXMK_OPTS ?= -f
 
 .PHONY: clean distclean wordcount check help hacker-font main
@@ -108,16 +108,16 @@ hacker-font:
 
 main: $(MAIN).tex qdissertation.cls bibliography.bib acronyms.tex \
 	C*/chapter*.tex A*/appendix*.tex
-	lualatex -interaction=nonstopmode -file-line-error $(MAIN).tex
+	lualatex -interaction=nonstopmode -file-line-error -shell-escape $(MAIN).tex
 	-bibtex $(MAIN)
-	lualatex -interaction=nonstopmode -file-line-error $(MAIN).tex
+	lualatex -interaction=nonstopmode -file-line-error -shell-escape $(MAIN).tex
 	-makeglossaries $(MAIN)
-	lualatex -interaction=nonstopmode -file-line-error $(MAIN).tex
-	lualatex -interaction=nonstopmode -file-line-error $(MAIN).tex
+	lualatex -interaction=nonstopmode -file-line-error -shell-escape $(MAIN).tex
+	lualatex -interaction=nonstopmode -file-line-error -shell-escape $(MAIN).tex
 
 clean:
 	$(LATEXMK) -c $(MAIN)
-	rm -f *.aux *.log *.out *.toc *.lof *.lot *.loa
+	rm -f *.aux *.log *.out *.toc *.lof *.lot *.loa *.lol
 	rm -f *.bbl *.blg *.run.xml *.bcf
 	rm -f *.acn *.acr *.alg *.glg *.glo *.gls *.ist
 	rm -f *.fls *.fdb_latexmk *.synctex.gz
@@ -130,7 +130,7 @@ distclean: clean
 # Caption words are shown separately per file and in total.
 wordcount:
 	@echo "Word count per file (total = text + headers + captions):"; \
-	texcount -quiet -inc -sum=1,1,1,0,0,0,0 $(MAIN).tex 2>/dev/null | awk '\
+	texcount -quiet -opt=texcount.cfg -inc -sum=1,1,1,0,0,0,0 $(MAIN).tex 2>/dev/null | awk '\
 	  /^File: / { f=$$2 } \
 	  /^Included file: \.\// { sub(/^Included file: \.\//,""); f=$$0 } \
 	  /^Sum count: / { if (f != "") { s=$$3 } else if (tot) { total_sum=$$3 } } \
