@@ -182,7 +182,7 @@ The challenge lifecycle is deliberately simple from the learner's perspective bu
 	\label{fig:challenge_lifecycle}
 \end{figure}
 
-The application checks challenge status before chat requests, flag submissions, and deletion requests. Chat is only interactive for an active challenge, while history pages allow past messages to be viewed in read-only mode. Correct flag submissions are marked as \lstinline|completed|. Manual deletion marks the challenge as \lstinline|destroyed| immediately and then triggers container deletion asynchronously. Expiry is handled by application-side checks and by a host-side TTL reaper.
+The application checks challenge status before chat requests, flag submissions, and deletion requests. Chat is only interactive for an active challenge, while history pages allow past messages to be viewed in read-only mode. Correct flag submissions are marked as \lstinline|completed|. Manual deletion marks the challenge as \lstinline|destroyed| immediately and then triggers container deletion asynchronously. Expiry is handled by application-side checks and by a host-side TTL reaper, which is a cronjob running on the Proxmox host, checking every 5 minutes to see if a container has uptime exceeding one hour.
 
 There is a deliberate separation between logical state and infrastructure state. The database may mark a challenge as destroyed before the Ansible destroy playbook has finished. Similarly, the TTL reaper may delete a container before the database is next checked. VulnForge accepts this eventual consistency because the main requirement is to stop users interacting with stale challenges and to prevent indefinite resource use. The design favours safe terminal state transitions and independent cleanup over a more complex distributed transaction between the database and Proxmox.
 
@@ -296,7 +296,7 @@ Completed challenges include the solution summary for learning review. Active ch
 
 \subsection{Evaluation harness design}\label{sec:evaluation-harness-design}
 
-The evaluation harness was designed to provide evidence about the whole generated challenge lifecycle rather than only about the final user interface. A normal manual demonstration can show that one challenge works, but it cannot easily show whether generation, deployment, injection, verification, and cleanup behave reliably across different categories and difficulty levels. The harness therefore acts as a repeatable experimental driver for the same core modules used by the application.
+The evaluation harness was designed to provide evidence about the whole generated challenge lifecycle. A manual demonstration can show that one challenge works, but it cannot easily show whether generation, deployment, injection, verification, and cleanup behave reliably across different categories and difficulty levels. The evaluation harness therefore acts as a repeatable experimental tester for the same core modules used by the application.
 
 \begin{figure}[htbp]
 	\centering
@@ -305,30 +305,32 @@ The evaluation harness was designed to provide evidence about the whole generate
 	\label{fig:evaluation-harness-design}
 \end{figure}
 
-The harness separates evaluation into four modes, shown in Table~\ref{tab:evaluation-modes}. This separation was important because not every failure has the same meaning. A static generation failure indicates a problem with model output, schema validation, policy validation, or prompt constraints. A deployment failure indicates an infrastructure or orchestration problem. An injection failure often indicates that the generated specification cannot be realised inside the container. A verification failure may indicate either a broken challenge or a brittle generated check. Separating the stages makes it possible to analyse where reliability is lost.
+The harness separates evaluation into four modes, shown in Table~\ref{tab:evaluation-modes}. This separation was important because not every failure has the same meaning. A static failure indicates a problem with model output, a deployment failure indicates an infrastructure problem, an injection failure indicates that the generated specification cannot be inserted inside the container, and a verification failure may indicate either a broken challenge or a brittle generated check. Separating the stages makes it possible to analyse where reliability is lost.
 
 \begin{table}[htbp]
 	\centering
 	\begin{tabular}{@{}p{2.4cm}p{10.7cm}@{}}
 		\toprule
-		\textbf{Mode}      & \textbf{Purpose}                                                                                                                                                                                             \\
+		\textbf{Mode}      & \textbf{Purpose}
+		\\
 		\midrule
-		\lstinline|static| & Generates and validates vulnerability specifications without creating a container. This isolates \gls{llm} and prompt reliability from infrastructure reliability.                                           \\
+		\lstinline{static}
+		                   & Generates and validates vulnerability specifications without creating a container. This isolates LLM and prompt reliability from infrastructure reliability.                                    \\
 		\addlinespace
-		\lstinline|deploy| & Creates and destroys a blank container. This tests Proxmox, Ansible, static IP assignment, SSH key injection, and cleanup independently from generated vulnerabilities.                                      \\
+		\lstinline|deploy| & Creates and destroys a blank container. This tests Proxmox, Ansible, static IP assignment, SSH key injection, and cleanup independently from generated vulnerabilities.                         \\
 		\addlinespace
-		\lstinline|inject| & Generates a specification, deploys a container, injects the generated files and commands, and runs non-destructive health and flag-protection checks. This matches the normal launch-time verification path. \\
+		\lstinline|inject| & Generates a specification, deploys a container, injects the generated files and commands, and runs non destructive health and flag protection checks.                                           \\
 		\addlinespace
-		\lstinline|full|   & Runs the complete lifecycle including generated exploit checks. This gives stronger evidence that the generated vulnerability is solvable, but is slower and can involve state-changing checks.              \\
+		\lstinline|full|   & Runs the complete lifecycle including generated exploit checks. This gives stronger evidence that the generated vulnerability is solvable, but is slower and can involve state changing checks. \\
 		\bottomrule
 	\end{tabular}
 	\caption{Evaluation harness modes}
-    \label{tab:evaluation-modeslxc}
+	\label{tab:evaluation-modes}
 \end{table}
 
-Each run records both stage outcomes and evidence for later analysis: generated title, attack vector, package/file/service counts, validation-check counts, a hash of the generated file set, stage durations, verification results, cleanup result, and a failure classification. The file-set hash gives a compact way to compare generated artefacts without relying only on titles or descriptions. The failure classification is deliberately heuristic rather than authoritative; it supports analysis by grouping likely generation, infrastructure, validation-test, timing, and uncertain semantic failures, but individual failures can still require manual inspection.
+Each run records both stage outcomes and evidence for later analysis. This includes the generated title, attack vector, file counts, a hash of the generated files, stage durations, verification results, cleanup result, and a failure classification. The file hash gives a compact way to compare generated artefacts without relying only on titles or descriptions. The failure classification is deliberately heuristic rather than authoritative; it supports analysis by grouping likely generation, infrastructure, validation test, timing, and uncertain semantic failures, but individual failures can still require manual inspection, which was done during testing.
 
-The design choice to call the same generation, deployment, injection, verification, and cleanup modules as the application was deliberate. It means the evaluation measures the implemented pipeline rather than a separate mock implementation. The trade-off is that full evaluation is slower, depends on the Proxmox host, and can be affected by external infrastructure conditions. This is acceptable because infrastructure reliability is part of the practical feasibility of an on-demand cyber range.
+The design choice to call the same generation, deployment, injection, verification, and cleanup modules as the application was deliberate. It means the evaluation measures the implemented pipeline rather than a separate mock implementation. The trade off is that full evaluation is slower, depends on the Proxmox host, and can be affected by external infrastructure conditions. This is acceptable because infrastructure reliability is part of the practical feasibility of the project.
 
 \section{Implementation}\label{sec:impl}
 
@@ -400,9 +402,9 @@ The OpenRouter client is deliberately small. It handles model availability check
 
 \subsection{Prompt catalogue and diversity implementation}\label{sec:prompt-catalogue}
 
-The prompt implementation evolved from a single prompt file into a catalogue of category modules. The current categories are web server misconfiguration, privilege escalation, SQL injection, insecure file permissions, and web application logic flaws. Each category defines a user-facing label and description, a list of variants, whether it supports themes, and a prompt template.
+The prompt implementation evolved from a single prompt file into a catalogue of category modules. The current categories are web server misconfiguration, privilege escalation, SQL injection, insecure file permissions, and web application logic flaws. Each category defines a user facing label and description, a list of variants, whether it supports themes, and a prompt template.
 
-The prompt builder chooses a variant randomly and, for web categories, chooses an application theme randomly. It also queries previous challenges for the user in the same category and passes recent titles and solution summaries into the prompt as an exclusion list. This is not a mathematical guarantee of uniqueness, but it gives the LLM explicit context about what not to repeat. The evaluation harness can measure diversity more concretely using generated titles, attack vectors, and file-set hashes.
+The prompt builder chooses a variant randomly and, for web categories, chooses an application theme. It also queries previous challenges for the user in the same category and passes recent titles and solution summaries into the prompt as an exclusion list. This is not a guarantee of uniqueness, but it gives the LLM explicit context about what not to repeat. The evaluation harness can measure diversity more concretely using generated titles and attack vectors.
 
 \subsection{Container deployment implementation}\label{sec:container-deployment}
 
@@ -445,17 +447,24 @@ As mentioned previously, the health mode check is used during regular launches. 
 
 \subsection{Evaluation harness implementation}\label{sec:evaluation-harness-implementation}
 
-The evaluation harness is implemented in \lstinline|scripts/evaluate.ts|. It is a command-line TypeScript script rather than a Next.js route because it is intended for controlled experiments, not for direct user interaction. It loads the same environment files as the web application using \lstinline|@next/env|, so the evaluation uses the same OpenRouter, Ansible, and Proxmox configuration as the deployed prototype.
+The evaluation harness is implemented in \lstinline{scripts/evaluate.ts}. It is a TypeScript script rather than a Next.js route because it is intended for controlled testing, not for direct user interaction. It loads the same environment files as the web application using \lstinline{@next/env}, so the evaluation uses the same OpenRouter, Ansible, and Proxmox configuration as the deployed application.
 
-The script uses Commander to parse and validate command-line options such as mode, categories, difficulties, number of runs, output directory, and concurrency. From these options it builds a list of evaluation tasks. Each task is executed by \lstinline|runOneEvaluation()|, which records a structured result object and times each stage with a small \lstinline|timeStage()| wrapper. This avoids relying on console logs as the main evidence source; timings and outcomes are written into machine-readable artefacts.
+The script uses \lstinline{Commander} to parse and validate \gls{cli} options such as mode, categories, difficulties, number of runs, output directory, and concurrency. From these options it builds a list of evaluation tasks. Each task is executed by \lstinline{runOneEvaluation()}, which records a structured result object and times each stage with a small \lstinline{timeStage()} wrapper. This avoids relying on console logs as the main evidence source; timings and outcomes are written into a structured format. 
 
-For non-deploy modes, the first stage calls \lstinline|generateVulnerability()|. The validated specification and server-side flag are saved under \lstinline|generated-specs/| so that failed runs can be inspected later. These files are private evaluation artefacts because they contain flags and solution metadata. In container-backed modes, the harness then calls \lstinline|deployContainer()|, \lstinline|injectVulnerability()|, \lstinline|verifyInjectedChallenge()| where appropriate, and \lstinline|destroyContainer()| in a \lstinline|finally| block if a VMID was allocated. This ensures cleanup is attempted even when generation, injection, or verification fails after a container has been created.
+For non deploy modes, the first stage calls \lstinline{generateVulnerability()}. The validated specification and server side flag are saved under \lstinline{generated-specs/} so that failed runs can be inspected later. This has been particularly useful when debugging issues after many evaluation attempts. These files are private evaluation artefacts because they contain flags and solution metadata. In container backed modes, the harness then calls \lstinline{deployContainer()}, \lstinline{injectVulnerability()}, \lstinline{verifyInjectedChallenge()} where appropriate, and \lstinline{destroyContainer()}. This ensures cleanup is attempted even when generation, injection, or verification fails after a container has been created.
 
-The harness writes three main outputs after runs complete: \lstinline|results.json| for complete structured data, \lstinline|results.csv| for spreadsheet analysis, and \lstinline|summary.md| for report-level tables and Mermaid charts. The summary includes overall success, stage pass rates, category and difficulty breakdowns, duration distributions, failure stages, and failure classifications. Outputs are also written serially during long evaluations so that partial results are not lost if a later run fails or the evaluation is interrupted.
+The harness writes three main outputs after runs complete:
 
-Failure classification is implemented by \lstinline|classifyFailedRun()|. It uses the recorded failure stage, error text, verification groups, command exit codes, and flag-recovery evidence to assign triage labels such as \lstinline|generation_schema_failure|, \lstinline|generation_policy_failure|, \lstinline|infrastructure_orchestration_failure|, \lstinline|llm_challenge_configuration_failure|, \lstinline|generated_validation_test_failure|, \lstinline|evaluator_timing_fragility|, or \lstinline|uncertain_semantic_failure|. These labels are not treated as proof; they are a practical way to make the evaluation results interpretable before manual review.
+\begin{enumerate}
+    \item \lstinline{results.json} for complete structured data, including the details for each stage and the status. This is useful when debugging why a particular challenge was a failure as we can see where and why it failed, and on what command it may have failed on. When tailoring prompts, this became invaluable.
+    \item \lstinline{results.csv} for spreadsheet analysis, and to get a holistic view of the challenges run and their status.
+    \item \lstinline{summary.md} for report level tables and Mermaid charts. The summary includes overall success, stage pass rates, category and difficulty breakdowns, duration distributions, failure stages, and failure classifications. Outputs are also written serially during long evaluations so that partial results are not lost if a later run fails or the evaluation is interrupted. This is what was monitored during an evaluation run to see how it was going.
+\end{enumerate}
 
-One implementation problem was that early evaluation failures were too coarse. A single failed run could hide whether the model generated invalid JSON, the container failed to start, a service failed after injection, the flag was exposed directly, or the exploit command was simply brittle. The final harness addresses this by preserving command results, validation groups, stage timings, and classification reasons. This made the Results and Evaluation chapter possible because failures could be discussed by cause rather than only as a total failure count.
+
+Failure classification is implemented by \lstinline{classifyFailedRun()}. It uses the recorded failure stage, error text, verification groups, command exit codes, and flag recovery evidence to assign triage labels such as \lstinline{generation_schema_failure}, \lstinline{generation_policy_failure}, \lstinline{infrastructure_orchestration_failure}, \lstinline{llm_challenge_configuration_failure}, \lstinline{generated_validation_test_failure}, \lstinline{evaluator_timing_fragility}, or \lstinline{uncertain_semantic_failure}. These labels are not treated as proof; they are a practical way to make the evaluation results interpretable before manual review. Having these indicators made it much easier to identify issues. 
+
+One implementation problem was that early evaluation failures were too broad. A single failed run could hide whether the model generated invalid JSON, the container failed to start, a service failed after injection, the flag was exposed directly, or the exploit command was simply brittle. The final harness addresses this by preserving command results, validation groups, stage timings, and classification reasons. 
 
 \subsection{Challenge Launch Implementation}\label{sec:challenge-launch_implementation}
 
@@ -572,3 +581,9 @@ We started off with an in memory chat that was just used in the individual chall
 
 
 \section{Summary}\label{sec:summary}
+
+This section has described the design and implementation of VulnForge as an on demand training platform, combining a web application, infrastructure and orchestration, and an LLM pipeline. The main design decision throughout was to place explicit boundaries around each part of the system that was deemed a risk, with LLM output consistently constrained by schema validation and verification checks. Learners only interact with the web interface, rather than any of the infrastructure, ensuring this is abstracted from them, and they can focus on live training and learning review.
+
+The implementation also shows the trade offs that one has to consider when building a dynamic platform. LXC containers provide faster launch times, but have weaker isolation, which led to design decisions such as the TTL reaper to ensure that containers are adequately cleaned up. Verification gives a practical launch time check without mutating the users final machine, while full exploit verification is reserved for evaluation. Similarly, for the scope of this project, isolating network access to a LAN kept prototyping in a limited scope, and with the constrained time frame of the project, allowed us to get a working prototype without spending excessive time on public networking.
+
+Overall, we have established that VulnForge meets the core architectural aim of dynamically generating, deploying, verifying and recording short lived training environments. The system is intentionally designed in a methodical manner, making prototyping and iteration easier, and exposing certain limitations of specific aspects. Limitations that were exposed include stricter injection hardening, broader evaluation of vulnerabilities, and more robust methods of cleanup.

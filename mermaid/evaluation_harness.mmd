@@ -22,12 +22,11 @@ flowchart TB
     H["Structured result"]
     I["Full verification"]
     J["Record timing,<br/>stage outcome, hashes"]
-    K["Write JSON output"]
-    L["Analyse in<br/>evaluation chapter"]
+    K["Write JSON and CSV output"]
 
     A --> B --> C
     C -- static --> D --> H
     C -- deploy --> E --> H
     C -- inject --> F --> H
     C -- full --> G --> I --> H
-    H --> J --> K --> L
+    H --> J --> K 
