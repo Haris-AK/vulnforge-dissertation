@@ -10,10 +10,11 @@
 % \section as in main chapters. Replace with your own supplementary material.
 % =============================================================================
 
-This appendix contains supplementary material: extra tables, derivations, or notation. Replace with your own content.
 
-\section{Additional tables}\label{app:tables}
+\section{AI Usage}\label{sec:ai-usage}
 
-\section{Further analysis}\label{app:analysis}
+Various models were used to support development of this project. Largely this was through Anthropic's Claude Opus 4.5 and 4.6, and OpenAI's 5.4 and 5.5. These models were used to help debug code throughout the project, such as heading formatting for LLM requests, incorrect state on the web app, styling and comb through logs to identify issues. They were also used to help produce the prompts used for generating vulnerabilities. When developing these, they were manually created, but AI was used to help tailor some of the constraints, and requirements. Each occasion where AI was used, the design and initial implementations were manually created, with AI assisting in fine tuning and ingesting large logs to identify bugs. It was also used to help with diagram generation, we provided it with the initial diagram including the general flow and nodes inside each, and it helped style them to fit an A4 report page.
 
-\section{Derivation}\label{app:derivation}
+This was appropriate as the project involved a large range of technical areas, and AI assistance was beneficial in exploring bugs in different implementations choices, and identifying causation of errors where appropriate. They were not treated as authoritative sources, and not used as substitutes for testing and research.
+
+Limitations of these tools included the fact that they often produced incorrect or unsupported outputs, for example, when trying to fix headers, they sometimes tried to use packages that did not exist. Debugging suggestions were more reliable as they had logs to back themselves up with. There was no submission of confidential information, including the agents being unable to directly access files with API keys or credentials.
