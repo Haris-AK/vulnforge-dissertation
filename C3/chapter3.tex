@@ -7,6 +7,8 @@
 
 This chapter describes how VulnForge was designed, and implemented. The specification states what the system is required to do and the constraints that shaped the solution. The design then explains the main architectural decisions and the viewpoints needed to understand the platform: architecture, data model, challenge lifecycle, generation, verification, tutoring, and history. The implementation section describes how the most important design ideas were realised in the codebase, focusing on the parts that are critical to the system or that caused notable implementation problems.
 
+The methodology follows an iterative build and evaluate approach. Each major design choice was made to support the research question: "Whether generated vulnerable environments can be created, deployed, validated, used and cleaned up reliably in a controlled educational setting". For this reason, the chapter doe not only describe the final architecture used, but also why particular technologies and guard rails were selected, and how the system can be reproduced.
+
 \section{Specification}\label{sec:spec}
 
 VulnForge has to solve three connected problems. First, it must provide a usable web interface where learners can create an account, store an SSH public key, choose a vulnerability category and difficulty, launch a challenge, submit a flag, and review previous attempts. Secondly, it must safely orchestrate infrastructure: create an isolated container, inject the learner's SSH key, apply an LLM-generated vulnerability specification, verify the result, and clean up afterwards. Thirdly, it must use generative AI in a constrained way so that an LLM can help create and tutor a challenge without being allowed to control the host directly or reveal the answer to the learner.
@@ -27,6 +29,8 @@ The main operating assumptions are:
 \end{itemize}
 
 These assumptions restrict the project scope. VulnForge does not attempt to implement payment, public cloud scaling, browser-based terminals, end-user Proxmox administration, or a complete managed VPN. The core purpose is to demonstrate controlled generation, deployment, verification, guided assistance, flag submission, and cleanup for short-lived vulnerable machines.
+
+The requirements were defined from the minimum lifecycle needed for a usable generated challenge. A challenge must be generated, accessed, verified, completed, recorded and cleaned up. Requirements that do not support this lifecycle, such as a scoreboard, or large scale administration were excluded in order to keep the prototype focused on feasibility and evaluation of the current pipeline.
 
 \subsection{Functional requirements}\label{sec:functional_requirements}
 
@@ -122,12 +126,16 @@ These assumptions restrict the project scope. VulnForge does not attempt to impl
 
 The architecture of VulnForge uses a full-stack Next.js application as the control plane. It is connected to SQLite for persistent state, OpenRouter for LLM calls, Ansible for automation, and Proxmox VE for container lifecycle management.
 
+This architecture was chosen to keep untrusted generation, user interaction, and inrastructure control separated. The web application acts as the only user facing control plane, so they do not interact with orchestration, OpenRouter is used for the vast choice of LLM models, wit output being structured data. Ansible performs repeatable infrastructure operations with Proxmox isolating each container from one another. This makes the system easier to test as each stage that may fail can be recorded independently during evaluation.
+
 \begin{figure}[htbp]
 	\centering
 	\includegraphics[width=\linewidth,height=0.82\textheight,keepaspectratio]{figures/system_architecture.pdf}
 	\caption{System architecture}
 	\label{fig:system-architecture}
 \end{figure}
+
+Figure ~\ref{fig:system-architecture} shows the deployment boundary used throughout the project. The learner interacts only with the web application and their assigned container. It is responsible for authentication, state management, generation requests, orchestration calls and flag submissions. OpenRouter calls all occur server side, with Ansible and Proxmox never being exposed to the user. This design was chosen in order to minimise the number of entry points the user has to interact with, and also to make the system reproducible. You can replace the web app with another if you prefer, you can change the orchestration layer to a cloud based one, or you can change the LLM library being used, with all other components still working as expected.
 
 The web application is the central authority. It validates user input, manages accounts and sessions, stores challenge state, invokes the LLM, invokes container orchestration, presents the challenge, and confirms completion. Students do not receive Proxmox credentials, Ansible inventory data, API tokens, flags, generated validation commands, or the private solution summary while a challenge is active.
 
@@ -449,22 +457,22 @@ As mentioned previously, the health mode check is used during regular launches. 
 
 The evaluation harness is implemented in \lstinline{scripts/evaluate.ts}. It is a TypeScript script rather than a Next.js route because it is intended for controlled testing, not for direct user interaction. It loads the same environment files as the web application using \lstinline{@next/env}, so the evaluation uses the same OpenRouter, Ansible, and Proxmox configuration as the deployed application.
 
-The script uses \lstinline{Commander} to parse and validate \gls{cli} options such as mode, categories, difficulties, number of runs, output directory, and concurrency. From these options it builds a list of evaluation tasks. Each task is executed by \lstinline{runOneEvaluation()}, which records a structured result object and times each stage with a small \lstinline{timeStage()} wrapper. This avoids relying on console logs as the main evidence source; timings and outcomes are written into a structured format. 
+The script uses \lstinline{Commander} to parse and validate \gls{cli} options such as mode, categories, difficulties, number of runs, output directory, and concurrency. From these options it builds a list of evaluation tasks. Each task is executed by \lstinline{runOneEvaluation()}, which records a structured result object and times each stage with a small \lstinline{timeStage()} wrapper. This avoids relying on console logs as the main evidence source; timings and outcomes are written into a structured format.
 
 For non deploy modes, the first stage calls \lstinline{generateVulnerability()}. The validated specification and server side flag are saved under \lstinline{generated-specs/} so that failed runs can be inspected later. This has been particularly useful when debugging issues after many evaluation attempts. These files are private evaluation artefacts because they contain flags and solution metadata. In container backed modes, the harness then calls \lstinline{deployContainer()}, \lstinline{injectVulnerability()}, \lstinline{verifyInjectedChallenge()} where appropriate, and \lstinline{destroyContainer()}. This ensures cleanup is attempted even when generation, injection, or verification fails after a container has been created.
 
 The harness writes three main outputs after runs complete:
 
 \begin{enumerate}
-    \item \lstinline{results.json} for complete structured data, including the details for each stage and the status. This is useful when debugging why a particular challenge was a failure as we can see where and why it failed, and on what command it may have failed on. When tailoring prompts, this became invaluable.
-    \item \lstinline{results.csv} for spreadsheet analysis, and to get a holistic view of the challenges run and their status.
-    \item \lstinline{summary.md} for report level tables and Mermaid charts. The summary includes overall success, stage pass rates, category and difficulty breakdowns, duration distributions, failure stages, and failure classifications. Outputs are also written serially during long evaluations so that partial results are not lost if a later run fails or the evaluation is interrupted. This is what was monitored during an evaluation run to see how it was going.
+	\item \lstinline{results.json} for complete structured data, including the details for each stage and the status. This is useful when debugging why a particular challenge was a failure as we can see where and why it failed, and on what command it may have failed on. When tailoring prompts, this became invaluable.
+	\item \lstinline{results.csv} for spreadsheet analysis, and to get a holistic view of the challenges run and their status.
+	\item \lstinline{summary.md} for report level tables and Mermaid charts. The summary includes overall success, stage pass rates, category and difficulty breakdowns, duration distributions, failure stages, and failure classifications. Outputs are also written serially during long evaluations so that partial results are not lost if a later run fails or the evaluation is interrupted. This is what was monitored during an evaluation run to see how it was going.
 \end{enumerate}
 
 
-Failure classification is implemented by \lstinline{classifyFailedRun()}. It uses the recorded failure stage, error text, verification groups, command exit codes, and flag recovery evidence to assign triage labels such as \lstinline{generation_schema_failure}, \lstinline{generation_policy_failure}, \lstinline{infrastructure_orchestration_failure}, \lstinline{llm_challenge_configuration_failure}, \lstinline{generated_validation_test_failure}, \lstinline{evaluator_timing_fragility}, or \lstinline{uncertain_semantic_failure}. These labels are not treated as proof; they are a practical way to make the evaluation results interpretable before manual review. Having these indicators made it much easier to identify issues. 
+Failure classification is implemented by \lstinline{classifyFailedRun()}. It uses the recorded failure stage, error text, verification groups, command exit codes, and flag recovery evidence to assign triage labels such as \lstinline{generation_schema_failure}, \lstinline{generation_policy_failure}, \lstinline{infrastructure_orchestration_failure}, \lstinline{llm_challenge_configuration_failure}, \lstinline{generated_validation_test_failure}, \lstinline{evaluator_timing_fragility}, or \lstinline{uncertain_semantic_failure}. These labels are not treated as proof; they are a practical way to make the evaluation results interpretable before manual review. Having these indicators made it much easier to identify issues.
 
-One implementation problem was that early evaluation failures were too broad. A single failed run could hide whether the model generated invalid JSON, the container failed to start, a service failed after injection, the flag was exposed directly, or the exploit command was simply brittle. The final harness addresses this by preserving command results, validation groups, stage timings, and classification reasons. 
+One implementation problem was that early evaluation failures were too broad. A single failed run could hide whether the model generated invalid JSON, the container failed to start, a service failed after injection, the flag was exposed directly, or the exploit command was simply brittle. The final harness addresses this by preserving command results, validation groups, stage timings, and classification reasons.
 
 \subsection{Challenge Launch Implementation}\label{sec:challenge-launch_implementation}
 
