@@ -9,6 +9,8 @@
 # SPDX-License-Identifier: LPPL-1.3c
 
 MAIN = main
+BUILD_DIR = build
+export TEXMF_OUTPUT_DIRECTORY := $(CURDIR)/$(BUILD_DIR)
 # Seed used for obfuscated fonts. Override with `make hacker-font SEED=...`.
 # If not provided, we pick a timestamp seed so all generated fonts share one permutation.
 SEED ?= $(shell date +%s)
@@ -108,12 +110,14 @@ hacker-font:
 
 main: $(MAIN).tex qdissertation.cls bibliography.bib acronyms.tex \
 	C*/chapter*.tex A*/appendix*.tex
-	lualatex -interaction=nonstopmode -file-line-error -shell-escape $(MAIN).tex
-	-bibtex $(MAIN)
-	lualatex -interaction=nonstopmode -file-line-error -shell-escape $(MAIN).tex
-	-makeglossaries $(MAIN)
-	lualatex -interaction=nonstopmode -file-line-error -shell-escape $(MAIN).tex
-	lualatex -interaction=nonstopmode -file-line-error -shell-escape $(MAIN).tex
+	@mkdir -p $(BUILD_DIR)
+	lualatex -interaction=nonstopmode -file-line-error -shell-escape -output-directory=$(BUILD_DIR) $(MAIN).tex
+	cd $(BUILD_DIR) && BIBINPUTS=..: bibtex $(MAIN)
+	lualatex -interaction=nonstopmode -file-line-error -shell-escape -output-directory=$(BUILD_DIR) $(MAIN).tex
+	cd $(BUILD_DIR) && makeglossaries $(MAIN)
+	lualatex -interaction=nonstopmode -file-line-error -shell-escape -output-directory=$(BUILD_DIR) $(MAIN).tex
+	lualatex -interaction=nonstopmode -file-line-error -shell-escape -output-directory=$(BUILD_DIR) $(MAIN).tex
+	cp $(BUILD_DIR)/$(MAIN).pdf $(MAIN).pdf
 
 clean:
 	$(LATEXMK) -c $(MAIN)
@@ -121,6 +125,7 @@ clean:
 	rm -f *.bbl *.blg *.run.xml *.bcf
 	rm -f *.acn *.acr *.alg *.glg *.glo *.gls *.ist
 	rm -f *.fls *.fdb_latexmk *.synctex.gz
+	rm -rf $(BUILD_DIR)
 
 distclean: clean
 	rm -f $(MAIN).pdf

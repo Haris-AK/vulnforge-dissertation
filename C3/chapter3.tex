@@ -555,7 +555,7 @@ VulnForge uses Pino for logging. Methods emit structured events based on their n
 
 \begin{listing}[htbp]
 	\begin{minted}{TypeScript}
-    function sanitize(value: unknown, seen: WeakSet<object> = new WeakSet(), depth = 0): unknown {
+function sanitize(value: unknown, seen: WeakSet<object> = new WeakSet(), depth = 0): unknown {
   if (value instanceof Error) {
     return {
       name: value.name,

@@ -1,5 +1,5 @@
 \begin{MintedVerbatim}[commandchars=\\\{\}]
-\PYG{+w}{    }\PYG{k+kd}{function}\PYG{+w}{ }\PYG{n+nx}{sanitize}\PYG{p}{(}\PYG{n+nx}{value}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{unknown}\PYG{p}{,}\PYG{+w}{ }\PYG{n+nx}{seen}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{WeakSet}\PYG{o}{\PYGZlt{}}\PYG{n+nx}{object}\PYG{o}{\PYGZgt{}}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{o+ow}{new}\PYG{+w}{ }\PYG{n+nb}{WeakSet}\PYG{p}{(),}\PYG{+w}{ }\PYG{n+nx}{depth}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+m+mf}{0}\PYG{p}{)}\PYG{o}{:}\PYG{+w}{ }\PYG{n+nx}{unknown}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
+\PYG{k+kd}{function}\PYG{+w}{ }\PYG{n+nx}{sanitize}\PYG{p}{(}\PYG{n+nx}{value}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{unknown}\PYG{p}{,}\PYG{+w}{ }\PYG{n+nx}{seen}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{WeakSet}\PYG{o}{\PYGZlt{}}\PYG{n+nx}{object}\PYG{o}{\PYGZgt{}}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{o+ow}{new}\PYG{+w}{ }\PYG{n+nb}{WeakSet}\PYG{p}{(),}\PYG{+w}{ }\PYG{n+nx}{depth}\PYG{+w}{ }\PYG{o}{=}\PYG{+w}{ }\PYG{l+m+mf}{0}\PYG{p}{)}\PYG{o}{:}\PYG{+w}{ }\PYG{n+nx}{unknown}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
 \PYG{+w}{  }\PYG{k}{if}\PYG{+w}{ }\PYG{p}{(}\PYG{n+nx}{value}\PYG{+w}{ }\PYG{o+ow}{instanceof}\PYG{+w}{ }\PYG{n+ne}{Error}\PYG{p}{)}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
 \PYG{+w}{    }\PYG{k}{return}\PYG{+w}{ }\PYG{p}{\PYGZob{}}
 \PYG{+w}{      }\PYG{n+nx}{name}\PYG{o}{:}\PYG{+w}{ }\PYG{k+kt}{value.name}\PYG{p}{,}
