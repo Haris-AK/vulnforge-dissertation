@@ -38,7 +38,7 @@ The requirements were derived from the minimum lifecycle we deemed necessary for
 
 \begin{longtable}{|p{0.10\textwidth}|p{0.38\textwidth}|p{0.40\textwidth}|}
 	\caption{Functional requirements and corresponding design responses}
-	\label{tab:functional-requirements-long} \\
+	\label{tab:functional-requirements-long}                                                                                                                                                                                                                                    \\
 	\hline
 	\textbf{ID} & \textbf{Requirement}                                                                            & \textbf{Final design response}                                                                                                                              \\
 	\hline
@@ -48,7 +48,7 @@ The requirements were derived from the minimum lifecycle we deemed necessary for
 	\hline
 	\endhead
 	\hline
-	\multicolumn{3}{|r|}{\emph{Continued on next page}} \\
+	\multicolumn{3}{|r|}{\emph{Continued on next page}}                                                                                                                                                                                                                         \\
 	\hline
 	\endfoot
 	\hline
@@ -90,17 +90,17 @@ The requirements were derived from the minimum lifecycle we deemed necessary for
 
 \begin{longtable}{|p{0.15\textwidth}|p{0.74\textwidth}|}
 	\caption{Non-functional requirements and constraints}
-	\label{tab:non-functional-requirements-long} \\
+	\label{tab:non-functional-requirements-long}                                                                                                                                                                                                                                                                                                                             \\
 	\hline
-	\textbf{Constraint} & \textbf{Design implication} \\
+	\textbf{Constraint} & \textbf{Design implication}                                                                                                                                                                                                                                                                                                                        \\
 	\hline
 	\endfirsthead
 	\hline
-	\textbf{Constraint} & \textbf{Design implication} \\
+	\textbf{Constraint} & \textbf{Design implication}                                                                                                                                                                                                                                                                                                                        \\
 	\hline
 	\endhead
 	\hline
-	\multicolumn{2}{|r|}{\emph{Continued on next page}} \\
+	\multicolumn{2}{|r|}{\emph{Continued on next page}}                                                                                                                                                                                                                                                                                                                      \\
 	\hline
 	\endfoot
 	\hline
@@ -339,7 +339,7 @@ The harness separates evaluation into four modes, shown in Table~\ref{tab:evalua
 	\label{tab:evaluation-modes}
 	\begin{tabular}{|p{2.4cm}|p{10.7cm}|}
 		\hline
-		\textbf{Mode}      & \textbf{Purpose} \\
+		\textbf{Mode}      & \textbf{Purpose}                                                                                                                                                                                \\
 		\hline
 		\lstinline{static}
 		                   & Generates and validates vulnerability specifications without creating a container. This isolates LLM and prompt reliability from infrastructure reliability.                                    \\
@@ -371,23 +371,23 @@ The application is implemented with Next.js, React, TypeScript, Drizzle ORM, SQL
 	\label{tab:implementation-areas}
 	\begin{tabular}{|>{\raggedright\arraybackslash}p{4cm}|>{\raggedright\arraybackslash}p{9.5cm}|}
 		\hline
-		\textbf{Area}                            & \textbf{Key implementation files}                                                                                       \\
+		\textbf{Area}                            & \textbf{Key implementation files}                                                                                      \\
 		\hline
-		Authentication and sessions              & \lstinline|app/lib/auth.ts|, \lstinline|app/api/auth/*|, session repository.                                            \\
+		Authentication and sessions              & \lstinline|app/lib/auth.ts|, \lstinline|app/api/auth/*|, \lstinline{app/lib/db/repositories/sessions.ts}               \\
 		\hline
-		User settings and SSH keys               & \lstinline|app/api/user/settings/route.ts|, \lstinline|app/lib/ssh-key.ts|.                                             \\
+		User settings and SSH keys               & \lstinline|app/api/user/settings/route.ts|, \lstinline|app/lib/ssh-key.ts|                                             \\
 		\hline
-		Database and repositories                & \lstinline|app/lib/db/schema.ts|, \lstinline|app/lib/db/repositories/*|, \lstinline|drizzle/*.sql|.                     \\
+		Database and repositories                & \lstinline|app/lib/db/schema.ts|, \lstinline|app/lib/db/repositories/*|, \lstinline|drizzle/*.sql|                     \\
 		\hline
-		LLM generation and prompts               & \lstinline|app/lib/openrouter.ts|, OpenRouter client and fallback modules, prompt category modules.                     \\
+		LLM generation and prompts               & \lstinline|app/lib/openrouter.ts|, \lstinline{app/lib/prompts/*}                                                       \\
 		\hline
-		Container orchestration                  & \lstinline|app/lib/ansible-runner.ts|, \lstinline|deploy.yml|, \lstinline|destroy.yml|, LXC lifecycle role.             \\
+		Container orchestration                  & \lstinline|app/lib/ansible-runner.ts|, \lstinline|deploy.yml|, \lstinline|destroy.yml|                                 \\
 		\hline
-		Vulnerability injection and verification & \lstinline|inject-vulnerability.yml|, \lstinline|verify-vulnerability.yml|, \lstinline|app/lib/verification-runner.ts|. \\
+		Vulnerability injection and verification & \lstinline|inject-vulnerability.yml|, \lstinline|verify-vulnerability.yml|, \lstinline|app/lib/verification-runner.ts| \\
 		\hline
-		Challenge APIs and tutor                 & \lstinline|app/api/challenges/*|, \lstinline|app/api/chat/route.ts|, \lstinline|ChatPanel.tsx|.                         \\
+		Challenge APIs and tutor                 & \lstinline|app/api/challenges/*|, \lstinline|app/api/chat/route.ts|, \lstinline|ChatPanel.tsx|                         \\
 		\hline
-		Evaluation support                       & \lstinline|scripts/evaluate.ts| and generated result artefacts.                                                         \\
+		Evaluation support                       & \lstinline|scripts/evaluate.ts| and generated results                                                                  \\
 		\hline
 	\end{tabular}
 \end{table}
@@ -418,7 +418,7 @@ Repository modules wrap database access for users, sessions, challenges, and mes
 	\label{fig:db-repositories}
 \end{figure}
 
-The challenge repository creates new challenges with \lstinline|status = 'active'|, an expiry time one hour after creation, and no \lstinline|completed_at| timestamp. It provides methods for finding the active challenge for a user, retrieving all challenges for history, finding prior challenges in a category for diversity prompting, finding expired active challenges, and transitioning a challenge into a terminal state.
+The challenge repository creates new challenges with \lstinline|status = 'active'|, an expiry time one hour after creation, and a \lstinline|completed_at| timestamp. It provides methods for finding the active challenge for a user, retrieving all challenges for history, finding prior challenges in a category for diversity prompting, finding expired active challenges, and transitioning a challenge into a terminal state.
 
 The one-active-challenge rule is enforced in three layers:
 \begin{enumerate}
