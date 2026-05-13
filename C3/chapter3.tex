@@ -36,9 +36,9 @@ The requirements were derived from the minimum lifecycle we deemed necessary for
 
 \subsection{Functional requirements}\label{sec:functional_requirements}
 
-\begin{longtable}{|p{0.10\textwidth}|p{0.40\textwidth}|p{0.43\textwidth}|}
+\begin{longtable}{|p{0.10\textwidth}|p{0.38\textwidth}|p{0.40\textwidth}|}
 	\caption{Functional requirements and corresponding design responses}
-	\label{tab:functional-requirements-long}                                                                                                                                                                                                                                    \\
+	\label{tab:functional-requirements-long} \\
 	\hline
 	\textbf{ID} & \textbf{Requirement}                                                                            & \textbf{Final design response}                                                                                                                              \\
 	\hline
@@ -48,7 +48,7 @@ The requirements were derived from the minimum lifecycle we deemed necessary for
 	\hline
 	\endhead
 	\hline
-	\multicolumn{3}{|r|}{\emph{Continued on next page}}                                                                                                                                                                                                                         \\
+	\multicolumn{3}{|r|}{\emph{Continued on next page}} \\
 	\hline
 	\endfoot
 	\hline
@@ -88,19 +88,19 @@ The requirements were derived from the minimum lifecycle we deemed necessary for
 
 \subsection{Non-functional requirements and constraints}\label{sec:non_functional_requirements}
 
-\begin{longtable}{|p{0.16\textwidth}|p{0.77\textwidth}|}
+\begin{longtable}{|p{0.15\textwidth}|p{0.74\textwidth}|}
 	\caption{Non-functional requirements and constraints}
-	\label{tab:non-functional-requirements-long}                                                                                                                                                                                                                                                                                                                             \\
+	\label{tab:non-functional-requirements-long} \\
 	\hline
-	\textbf{Constraint} & \textbf{Design implication}                                                                                                                                                                                                                                                                                                                        \\
+	\textbf{Constraint} & \textbf{Design implication} \\
 	\hline
 	\endfirsthead
 	\hline
-	\textbf{Constraint} & \textbf{Design implication}                                                                                                                                                                                                                                                                                                                        \\
+	\textbf{Constraint} & \textbf{Design implication} \\
 	\hline
 	\endhead
 	\hline
-	\multicolumn{2}{|r|}{\emph{Continued on next page}}                                                                                                                                                                                                                                                                                                                      \\
+	\multicolumn{2}{|r|}{\emph{Continued on next page}} \\
 	\hline
 	\endfoot
 	\hline
@@ -162,23 +162,23 @@ The \lstinline|challenges| table is the central domain object. It connects a dat
 
 Challenge state is represented by a \lstinline|status| field rather than only by the presence or absence of a completion timestamp.
 
-\begin{table}[htbp]
+\begin{table}[H]
 	\centering
-	\begin{tabular}{@{}>{\raggedright\arraybackslash}p{2.5cm}p{7cm}p{4.8cm}@{}}
-		\toprule
-		\textbf{Status}       & \textbf{Meaning}                                                           & \textbf{Set by}                                                               \\
-		\midrule
-		\lstinline|active|    & The user can work on the challenge and the container is expected to exist. & Challenge creation.                                                           \\
-		\addlinespace
-		\lstinline|completed| & The correct flag was submitted before expiry.                              & Flag submission route.                                                        \\
-		\addlinespace
-		\lstinline|destroyed| & The user manually ended the challenge.                                     & Challenge delete route.                                                       \\
-		\addlinespace
-		\lstinline|expired|   & The challenge exceeded its TTL.                                            & Active challenge checks, launch cleanup, or expired flag submission handling. \\
-		\bottomrule
-	\end{tabular}
 	\caption{Challenge status definitions}
 	\label{tab:challenge-status}
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{2.3cm}|p{6.6cm}|p{4.4cm}|}
+		\hline
+		\textbf{Status}       & \textbf{Meaning}                                                           & \textbf{Set by}                                                               \\
+		\hline
+		\lstinline|active|    & The user can work on the challenge and the container is expected to exist. & Challenge creation.                                                           \\
+		\hline
+		\lstinline|completed| & The correct flag was submitted before expiry.                              & Flag submission route.                                                        \\
+		\hline
+		\lstinline|destroyed| & The user manually ended the challenge.                                     & Challenge delete route.                                                       \\
+		\hline
+		\lstinline|expired|   & The challenge exceeded its TTL.                                            & Active challenge checks, launch cleanup, or expired flag submission handling. \\
+		\hline
+	\end{tabular}
 \end{table}
 
 A partial unique index on \lstinline|challenges(user_id)| where \lstinline|status = 'active'| enforces the rule that a user can only have one active challenge. This is stronger than an application-only check because it still works if two launch requests race.
@@ -282,21 +282,21 @@ Each validation command contains a name, description, context, command string, t
 
 Generated validation commands were chosen over a library of per category checks, as the generated content will vary between runs. A fixed check for privilege escalation using a specific SUID binary may work, but then if there's a specifically vulnerable script, this fixed check may not. By having the validation commands generated alongside the specific vulnerability specification, we can check exact paths, permissions and expected exploit conditions for that specific vulnerability, helping mitigate this issue. However, there is a tradeoff, the checks are also generated by the LLM meaning that they are also classed as untrusted, which is why the runner constrains the contexts in which they can be executed.
 
-\begin{table}[htbp]
+\begin{table}[H]
 	\centering
-	\begin{tabular}{@{}>{\raggedright\arraybackslash}p{3.5cm}p{5cm}p{5cm}@{}}
-		\toprule
-		\textbf{Context}              & \textbf{Meaning}                                                                     & \textbf{Typical use}                                   \\
-		\midrule
-		\lstinline|container_root|    & Run inside the LXC container as root through \lstinline|pct exec|.                   & Service checks, file checks, package checks.           \\
-		\addlinespace
-		\lstinline|container_student| & Run inside the LXC container as the \lstinline|student| user.                        & Flag-protection checks from the learner's perspective. \\
-		\addlinespace
-		\lstinline|external_http|     & Run from the Proxmox host against the container IP, normally using \lstinline|curl|. & Web application health checks and exploit checks.      \\
-		\bottomrule
-	\end{tabular}
 	\caption{Verification runner contexts}
 	\label{tab:verification-runner-context}
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{3.5cm}|p{5cm}|p{5cm}|}
+		\hline
+		\textbf{Context}              & \textbf{Meaning}                                                                     & \textbf{Typical use}                                   \\
+		\hline
+		\lstinline|container_root|    & Run inside the LXC container as root through \lstinline|pct exec|.                   & Service checks, file checks, package checks.           \\
+		\hline
+		\lstinline|container_student| & Run inside the LXC container as the \lstinline|student| user.                        & Flag-protection checks from the learner's perspective. \\
+		\hline
+		\lstinline|external_http|     & Run from the Proxmox host against the container IP, normally using \lstinline|curl|. & Web application health checks and exploit checks.      \\
+		\hline
+	\end{tabular}
 \end{table}
 
 The validator treats generated validation commands as untrusted. Host-control commands such as \lstinline|pct|, \lstinline|pvesh|, and \lstinline|qm| are rejected, alongside cloud metadata access, OpenRouter/API key references, SSH commands, and external HTTP checks that do not target the generated URL or IP. This is a pragmatic compromise: the model can describe how the challenge should be validated, but the platform constrains where and how the checks can run.
@@ -333,25 +333,24 @@ Figure~\ref{fig:evaluation-harness-design} shows the experimental workflow used 
 
 The harness separates evaluation into four modes, shown in Table~\ref{tab:evaluation-modes}. This separation was important because not every failure has the same meaning, and a single failure for the entire pipeline is hard to diagnose. A static failure indicates a problem with model output to our specification, a deployment failure indicates an infrastructure problem, an injection failure indicates that the generated specification cannot be inserted inside the container, and a verification failure may indicate either a broken challenge or a brittle generated check. Separating the stages makes it possible to analyse where reliability is lost.
 
-\begin{table}[htbp]
+\begin{table}[H]
 	\centering
-	\begin{tabular}{@{}p{2.4cm}p{10.7cm}@{}}
-		\toprule
-		\textbf{Mode}      & \textbf{Purpose}
-		\\
-		\midrule
-		\lstinline{static}
-		                   & Generates and validates vulnerability specifications without creating a container. This isolates LLM and prompt reliability from infrastructure reliability.                                    \\
-		\addlinespace
-		\lstinline|deploy| & Creates and destroys a blank container. This tests Proxmox, Ansible, static IP assignment, SSH key injection, and cleanup independently from generated vulnerabilities.                         \\
-		\addlinespace
-		\lstinline|inject| & Generates a specification, deploys a container, injects the generated files and commands, and runs non destructive health and flag protection checks.                                           \\
-		\addlinespace
-		\lstinline|full|   & Runs the complete lifecycle including generated exploit checks. This gives stronger evidence that the generated vulnerability is solvable, but is slower and can involve state changing checks. \\
-		\bottomrule
-	\end{tabular}
 	\caption{Evaluation harness modes}
 	\label{tab:evaluation-modes}
+	\begin{tabular}{|p{2.4cm}|p{10.7cm}|}
+		\hline
+		\textbf{Mode}      & \textbf{Purpose} \\
+		\hline
+		\lstinline{static}
+		                   & Generates and validates vulnerability specifications without creating a container. This isolates LLM and prompt reliability from infrastructure reliability.                                    \\
+		\hline
+		\lstinline|deploy| & Creates and destroys a blank container. This tests Proxmox, Ansible, static IP assignment, SSH key injection, and cleanup independently from generated vulnerabilities.                         \\
+		\hline
+		\lstinline|inject| & Generates a specification, deploys a container, injects the generated files and commands, and runs non destructive health and flag protection checks.                                           \\
+		\hline
+		\lstinline|full|   & Runs the complete lifecycle including generated exploit checks. This gives stronger evidence that the generated vulnerability is solvable, but is slower and can involve state changing checks. \\
+		\hline
+	\end{tabular}
 \end{table}
 
 Each run records both stage outcomes and evidence for later analysis. This includes the generated title, attack vector, file counts, a hash of the generated files, stage durations, verification results, cleanup result, and a failure classification. The file hash gives a compact way to compare generated artefacts without relying only on titles or descriptions. The failure classification is deliberately heuristic rather than authoritative; it supports analysis by grouping likely generation, infrastructure, validation test, timing, and uncertain semantic failures, but individual failures can still require manual inspection, which was done during testing.
@@ -366,24 +365,31 @@ To reproduce an evaluation, the configuration should specify the mode, vulnerabi
 
 The application is implemented with Next.js, React, TypeScript, Drizzle ORM, SQLite, Zod, Pino, Ansible, and Proxmox VE. The main implementation areas are summarised in Table~\ref{tab:implementation-areas}.
 
-\begin{table}[htbp]
+\begin{table}[H]
 	\centering
-	\begin{tabular}{@{}>{\raggedright\arraybackslash}p{4cm}>{\raggedright\arraybackslash}p{9.5cm}@{}}
-		\toprule
-		\textbf{Area}                            & \textbf{Key implementation files}                                                                                       \\
-		\midrule
-		Authentication and sessions              & \lstinline|app/lib/auth.ts|, \lstinline|app/api/auth/*|, session repository.                                            \\
-		User settings and SSH keys               & \lstinline|app/api/user/settings/route.ts|, \lstinline|app/lib/ssh-key.ts|.                                             \\
-		Database and repositories                & \lstinline|app/lib/db/schema.ts|, \lstinline|app/lib/db/repositories/*|, \lstinline|drizzle/*.sql|.                     \\
-		LLM generation and prompts               & \lstinline|app/lib/openrouter.ts|, OpenRouter client and fallback modules, prompt category modules.                     \\
-		Container orchestration                  & \lstinline|app/lib/ansible-runner.ts|, \lstinline|deploy.yml|, \lstinline|destroy.yml|, LXC lifecycle role.             \\
-		Vulnerability injection and verification & \lstinline|inject-vulnerability.yml|, \lstinline|verify-vulnerability.yml|, \lstinline|app/lib/verification-runner.ts|. \\
-		Challenge APIs and tutor                 & \lstinline|app/api/challenges/*|, \lstinline|app/api/chat/route.ts|, \lstinline|ChatPanel.tsx|.                         \\
-		Evaluation support                       & \lstinline|scripts/evaluate.ts| and generated result artefacts.                                                         \\
-		\bottomrule
-	\end{tabular}
 	\caption{Main implementation areas}
 	\label{tab:implementation-areas}
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{4cm}|>{\raggedright\arraybackslash}p{9.5cm}|}
+		\hline
+		\textbf{Area}                            & \textbf{Key implementation files}                                                                                       \\
+		\hline
+		Authentication and sessions              & \lstinline|app/lib/auth.ts|, \lstinline|app/api/auth/*|, session repository.                                            \\
+		\hline
+		User settings and SSH keys               & \lstinline|app/api/user/settings/route.ts|, \lstinline|app/lib/ssh-key.ts|.                                             \\
+		\hline
+		Database and repositories                & \lstinline|app/lib/db/schema.ts|, \lstinline|app/lib/db/repositories/*|, \lstinline|drizzle/*.sql|.                     \\
+		\hline
+		LLM generation and prompts               & \lstinline|app/lib/openrouter.ts|, OpenRouter client and fallback modules, prompt category modules.                     \\
+		\hline
+		Container orchestration                  & \lstinline|app/lib/ansible-runner.ts|, \lstinline|deploy.yml|, \lstinline|destroy.yml|, LXC lifecycle role.             \\
+		\hline
+		Vulnerability injection and verification & \lstinline|inject-vulnerability.yml|, \lstinline|verify-vulnerability.yml|, \lstinline|app/lib/verification-runner.ts|. \\
+		\hline
+		Challenge APIs and tutor                 & \lstinline|app/api/challenges/*|, \lstinline|app/api/chat/route.ts|, \lstinline|ChatPanel.tsx|.                         \\
+		\hline
+		Evaluation support                       & \lstinline|scripts/evaluate.ts| and generated result artefacts.                                                         \\
+		\hline
+	\end{tabular}
 \end{table}
 
 Drizzle runs migrations automatically when the database connection is created. SQLite is configured with WAL mode and foreign keys enabled. WAL mode is useful because the application performs concurrent reads and writes during actions such as challenge launch, history loading, and chat persistence. Next.js was chosen due to file based API routing, allowing it to sit alongside React in a single deployable location for simplicity as web development was not the focus of this project. Avoiding a separate back end service reduced complexity here, SQLite benefited simplicity here too, instead of having a server database, we could store a local db file. There did not need to be a separate database process or connection pool, we just required a single file. DrizzleORM was used as it provides type safe queries and keeps a relationship between the database schema and TypeScript models.

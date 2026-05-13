@@ -45,12 +45,17 @@ The closest precursor to the wide adoption of LLMs was the Security Scenario Gen
 
 The most recent example of an LLM-driven agent is AgentCyTE~\citep{rodriguez_agentcyte_2025}. This uses XML files for the CORE network emulator, integrating CVEs from VulnHub into training scenarios. It is the closest current example to the LLM-generated approach that VulnForge explores. However, AgentCyTE uses the LLM to modify scenario creation around a library of pre-selected CVE-backed Docker images; it does not synthesise new vulnerabilities.
 
-\begin{longtable}{|p{0.14\textwidth}|p{0.33\textwidth}|p{0.39\textwidth}|}
+\begin{longtable}{|p{0.13\textwidth}|p{0.31\textwidth}|p{0.36\textwidth}|}
 	\caption{Comparison of procedural and automated challenge generation systems}
-	\label{tab:procedural-generation-comparison}                                                       \\
+	\label{tab:procedural-generation-comparison} \\
 	\hline
 	\textbf{System} & \textbf{Generation method}         & \textbf{Limitation relevant to VulnForge}   \\
 	\hline
+	\endfirsthead
+	\hline
+	\textbf{System} & \textbf{Generation method}         & \textbf{Limitation relevant to VulnForge}   \\
+	\hline
+	\endhead
 	APG             & Parameterised templates            & Limited to predefined structures            \\
 	\hline
 	AutoCTF         & Injects bugs into C programs       & Focused on memory corruption                \\

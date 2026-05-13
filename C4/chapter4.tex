@@ -4,30 +4,161 @@
 % SPDX-FileCopyrightText: 2026 Frank Langbein <frank@langbein.org>
 % SPDX-License-Identifier: LPPL-1.3c
 %
-% Suggested sections: Setup (or Evaluation setup / Experimental setup); Results;
-% Discussion (or Evaluation and discussion); Limitations. Optional: Ablation
-% studies (AI/ML); Comparison with baselines; Threats to validity. Describe how
-% you demonstrated the system or hypothesis; include critical tests/experiments;
-% critically appraise strengths and weaknesses.
 % =============================================================================
 
-This chapter presents the results and evaluates them. Describe how the solution was demonstrated, include test or experimental results, and critically appraise strengths and weaknesses.
+This section evaluates to what extent did VulnForge achieve its main goal, to generate, deploy, verify, use and clean up short lived vulnerable environments for cyber security education. The evaluation focuses on the complete lifecycle of the application. A generated challenge will only be useful if the model output can be turned into a working container, the leaner is able to access it, the flag is achievable, the intended exploit can access it and the infrastructure is cleaned up after.
+
+We address four key questions:
+\begin{enumerate}
+	\item Can VulnForge generate valid vulnerability specifications across the supported categories and difficulty levels?
+	\item Can the platform deploy and inject these specifications into the isolated containers reliably?
+	\item Do the generated challenges pass health and flag protections, and exploit verification?
+	\item What weaknesses are shown from the project from the evaluation data?
+\end{enumerate}
+
+The results show that VulnForge does work as an end to end prototype for the majority of accessed challenges. 57 / 75 full lifecycle evaluations succeeded. This evidence shows that the architecture is viable, however, there is also failures that mean the system is not consistently reliable. The most evident weaknesses are generation failures and validation checks, with some evaluation weakenesses being caused by local infrastructure capacity and AI credit contraints.
+
+\subsection{Evaluation method}\label{sec:eval-method}
+
+The main evaluation was performed using the evaluation harness mentioned in~\ref{sec:evaluation-harness-design} and~\ref{sec:evaluation-harness-implementation}. This script uses the same generation, deployment, injection, verification and clean up as the web app, rather than using a separate mock. This was vital as the testing was meant to show that the project aim of a complete platform was viable, not just a specific module in the pipeline.
+
+The results were the following:
+
+\begin{table}[H]
+	\centering
+	\caption{Evaluation configuration}
+	\label{tab:evaluation-configuration}
+	\begin{tabular}{|>{\raggedright\arraybackslash}p{0.34\textwidth}|>{\raggedright\arraybackslash}p{0.56\textwidth}|}
+		\hline
+		\textbf{Parameter}                & \textbf{Value}                                                                                                     \\
+		\hline
+		Evaluation mode                   & \lstinline|full|                                                                                                   \\
+		\hline
+		Categories                        & web server misconfiguration, privilege escalation, SQL injection, insecure file permissions, web application logic \\
+		\hline
+		Difficulties                      & beginner, intermediate, advanced                                                                                   \\
+		\hline
+		Runs per category/difficulty pair & 5                                                                                                                  \\
+		\hline
+		Total planned runs                & 75                                                                                                                 \\
+		\hline
+		Concurrency                       & 15                                                                                                                 \\
+		\hline
+		Output artefacts                  & \lstinline|results.json|, \lstinline|results.csv|, \lstinline|summary.md|, generated specifications                \\
+		\hline
+	\end{tabular}
+\end{table}
+
+Each evaluation run uses the following lifecycle:
+\begin{enumerate}
+	\item Generate a structured vulnerability specification.
+	\item Validate the response against the Zod schema and policy checks.
+	\item Deploy an Ubuntu 24.04 LXC container with Ansible and Proxomox.
+	\item Inject generated files, packages, services and setup commands.
+	\item Run the health checks, flag checks and exploit checks.
+	\item Record the evidence in JSON, CSV and markdown.
+	\item Clean up the container.
+\end{enumerate}
+
+This method of evaluation was chosen as it tests the implementation under realistic conditions. A static only generation would just show whether the chosen model can produce valid JSON as per our schema. But it would not show whether the generated challenge was able to be deployed, exploitable and cleaned up. For this run, we used a primary model of Google Gemini 3.1 Pro Preview, and Google Gemini 2.5 pro as a fallback model.
+
+\subsection{Constraints}\label{sec:eval-constraints}
+
+The evaluation was constrained by two external resources, Proxmox host capacity, and AI token credits.
+
+First, full evaluation runs are computationally expensive. Each run may create a container, install packages, write generated files, restart services, run verification commands, and destroy the container. Concurrency had to be capped as we only had a single Proxmox node. The final run used a concurrency value of 15, which was high enough to complete a 75 runs in a practical time but still exposed infrastructure pressure, having one run failed during deployment. Earlier evaluation runs also showed that high concurrency full evaluations can produce VMID collisions or Proxmox API timeouts. Therefore, the concurrency setting should be interpreted as a practical compromise rather than an ideal test conditions.
+
+Secondly, the number of repeated runs was limited by AI cost. Full evaluations require repeated structured generation calls, often with retries. This prevented running a much larger statistical experiment. The final amount of 75 runs is large enough to reveal meaningful reliability patterns, but it should not be treated as a definitive measurement of production reliability.
 
 
-\section{Setup}\label{sec:setup}
-% Evaluation setup: data, metrics, baselines, how experiments or tests were run.
-% Optional subsections: environment, hyperparameters, evaluation protocol.
+\subsection{Overall Results}\label{sec:overall-results}
 
+\begin{table}[H]
+	\centering
+	\caption{Overall full evaluation results}
+	\label{tab:overall-results}
+	\begin{tabular}{|p{0.55\textwidth}|r|}
+		\hline
+		\textbf{Metric}              & \textbf{Result} \\
+		\hline
+		Total runs                   & 75              \\
+		\hline
+		End-to-end successful runs   & 57/75 (76.0\%)  \\
+		\hline
+		Failed runs                  & 18/75 (24.0\%)  \\
+		\hline
+		Generation success           & 72/75 (96.0\%)  \\
+		\hline
+		Deployment success           & 71/75 (94.7\%)  \\
+		\hline
+		Injection success            & 71/75 (94.7\%)  \\
+		\hline
+		Health verification success  & 69/75 (92.0\%)  \\
+		\hline
+		Flag-protection success      & 65/75 (86.7\%)  \\
+		\hline
+		Exploit verification success & 61/75 (81.3\%)  \\
+		\hline
+		Cleanup success              & 71/71 (100.0\%) \\
+		\hline
+	\end{tabular}
+\end{table}
 
-\section{Results}\label{sec:results}
-% Main findings: present tables and figures; summarise key outcomes. Optional
-% subsections: by research question, by dataset, or by metric.
+The overall success rate of 76\% shows that the system can complete the full lifecycle for a majority of generated challenges. This is a meaningful result because each successful run required several independently fallible stages to work together: LLM generation, schema and policy validation, container deployment, vulnerability injection, verification, exploit, and cleanup.
 
+The strongest result is cleanup, every deployed container that reached the cleanup stage was successfully destroyed. This is important because VulnForge intentionally creates vulnerable machines. Even when a generated challenge fails, the platform must avoid leaving unnecessary containers running.
 
-\section{Discussion}\label{sec:discussion}
-% Critical appraisal: strengths, weaknesses, methodology choices; comparison
-% with prior work. Optional: ablation analysis, sensitivity analysis.
+The weakest stage was exploit verification, with 61 out of 75 runs passing. This indicates that the main limitation is not basic container orchestration but verifying the exploit, the generated environment and generated validation logic do not always agree on a working exploit path to the flag.
 
-\section{Limitations}\label{sec:limitations}
-% Limitations, threats to validity, and suggested further tests if not all done.
+\subsection{Results by category}\label{sec:results-by-category}
+
+\begin{table}[htbp]
+	\centering
+	\caption{Success by vulnerability category}
+	\label{tab:results-by-category}
+	\begin{tabular}{|p{0.55\textwidth}|r|}
+		\hline
+		\textbf{Category}           & \textbf{Success} \\
+		\hline
+		Web server misconfiguration & 12/15 (80.0\%)   \\
+		\hline
+		Privilege escalation        & 11/15 (73.3\%)   \\
+		\hline
+		SQL injection               & 13/15 (86.7\%)   \\
+		\hline
+		Insecure file permissions   & 10/15 (66.7\%)   \\
+		\hline
+		Web application logic       & 11/15 (73.3\%)   \\
+		\hline
+	\end{tabular}
+\end{table}
+
+SQL injection was the strongest category, succeeding in 13 out of 15 runs. This suggests that the SQL injection prompt patterns and verification commands were comparatively well aligned. SQL injection challenges often have a deterministic HTTP request that can be used to recover the flag, which makes them easier to verify automatically.
+
+Insecure file permissions was the weakest category, succeeding in 10 out of 15 runs. This category overlaps semantically with privilege escalation and flag protection rules, so it is more difficult to distinguish intended exposure from accidental exposure. For example, a directly readable file might be the intended vulnerability in one design but a security failure in another. This motivated the later use of explicit \lstinline{flag_exposure} in the schema so the evaluator can distinguish intended access from unintended leakage.
+
+Web server misconfiguration performed relatively well overall, but some failures showed that HTTP path exposure is difficult to evaluate. A challenge may legitimately involve discovering an exposed file over HTTP, whereas the evaluator must still reject unintended direct flag disclosure. This again shows why the evaluation needed more than simple string checks.
+
+\subsection{Results by difficulty}\label{sec:results-by-difficulty}
+
+\begin{table}[htbp]
+	\centering
+	\caption{Success by difficulty}
+	\label{tab:results-by-difficulty}
+	\begin{tabular}{|p{0.55\textwidth}|r|}
+		\hline
+		\textbf{Difficulty} & \textbf{Success} \\
+		\hline
+		Beginner            & 17/25 (68.0\%)   \\
+		\hline
+		Intermediate        & 21/25 (84.0\%)   \\
+		\hline
+		Advanced            & 19/25 (76.0\%)   \\
+		\hline
+	\end{tabular}
+\end{table}
+
+The results do not show a simple pattern where harder difficulties always fail more often. Intermediate challenges had the highest success rate, while beginner challenges had the lowest. This suggests that reliability was affected more by the particular generation and validation than by the nominal difficulty label. In other words, the difficulty setting influenced the generated scenario, but it was not the only or dominant factor in whether a challenge deployed and verified successfully.
+
+This is an important critical point, the evaluation supports the claim that VulnForge can generate challenges across difficulty levels, but it does not yet prove that the difficulty labels are pedagogically calibrated. A separate user centred or expert review evaluation would be required to show that beginner, intermediate, and advanced challenges are actually experienced that way by learners.
 
