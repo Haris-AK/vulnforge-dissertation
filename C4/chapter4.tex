@@ -162,3 +162,120 @@ The results do not show a simple pattern where harder difficulties always fail m
 
 This is an important critical point, the evaluation supports the claim that VulnForge can generate challenges across difficulty levels, but it does not yet prove that the difficulty labels are pedagogically calibrated. A separate user centred or expert review evaluation would be required to show that beginner, intermediate, and advanced challenges are actually experienced that way by learners.
 
+\subsection{Failure Analysis}\label{sec:failure-analysis}
+
+The script classified failures by stage and by likely cause. These classifications are heuristic, but they make the results more interpretable than a single pass/fail percentage.
+
+\begin{table}[htbp]
+	\centering
+	\caption{Failure stages}
+	\label{tab:failure-stages}
+	\begin{tabular}{|p{0.45\textwidth}|r|r|}
+		\hline
+		\textbf{Failure stage}  & \textbf{Count} & \textbf{Share of all runs} \\
+		\hline
+		None --- successful run & 57             & 76.0\%                     \\
+		\hline
+		Verification            & 14             & 18.7\%                     \\
+		\hline
+		Generation              & 3              & 4.0\%                      \\
+		\hline
+		Deployment              & 1              & 1.3\%                      \\
+		\hline
+	\end{tabular}
+\end{table}
+
+Most failures occurred during verification. This means the platform usually reached the point where a container existed and a challenge had been injected, but the generated challenge then failed one of the health, flag protection, or exploit checks. This is useful evidence because it narrows the main weakness to semantic correctness and validation reliability rather than orchestration.
+
+\begin{table}[htbp]
+	\centering
+	\caption{Failure classifications}
+	\label{tab:failure-classes}
+	\begin{tabular}{|p{0.45\textwidth}|r|r|}
+		\hline
+		\textbf{Failure classification}      & \textbf{Count} & \textbf{Share of all runs} \\
+		\hline
+		LLM challenge configuration failure  & 6              & 8.0\%                      \\
+		\hline
+		Uncertain semantic failure           & 6              & 8.0\%                      \\
+		\hline
+		Generation policy failure            & 2              & 2.7\%                      \\
+		\hline
+		Generated validation test failure    & 2              & 2.7\%                      \\
+		\hline
+		Generation schema failure            & 1              & 1.3\%                      \\
+		\hline
+		Infrastructure orchestration failure & 1              & 1.3\%                      \\
+		\hline
+	\end{tabular}
+\end{table}
+
+
+The two largest failure classes were LLM challenge configuration failures and semantic failures. LLM challenge configuration failures occur when the generated challenge does not protect or expose the flag in the intended way. Uncertain semantic failures occur when an exploit check does not recover the flag, but further manual review is needed to decide whether the challenge itself is broken or whether the generated exploit command is brittle.
+
+These results show both a strength and a weakness of the approach. The strength is that the evaluation can identify meaningful failure classes. The weakness is that the system still depends on the LLM not only to generate the vulnerable environment but also to generate validation checks that accurately represent that environment.
+
+\subsection{Evaluation against functional requirements}\label{sec:eval-against-func-req}
+
+The project aim was to produce an MVP rather than to measure learning outcomes with end users. The evaluation therefore combines automated lifecycle evidence from the evaluation harness with developer self validation of user workflows. This is appropriate for the project scope, the critical question is whether the implemented platform satisfies the functional requirements defined in ~\ref{tab:functional-requirements-long}, not whether learners prefer it or learn more from it than from an alternative platform. User studies would be valuable future work, but they are not necessary to validate the MVP against the functional requirements.
+
+The evaluation harness provides the strongest evidence for requirements connected to generation, deployment, injection, verification, and cleanup. Manual developer validation provides evidence for requirements that involve interactive UI behaviour, account state, tutor use, and history pages. Manual validation is weaker than automated testing, but with the constraints of this project, it was deemed a necessary choice.
+
+\begin{longtable}{|p{0.05\textwidth}|p{0.22\textwidth}|p{0.18\textwidth}|p{0.44\textwidth}|}
+	\caption{Functional requirements validation}
+	\label{tab:requirements traceability}                                                                                                                                                                                                                                                                            \\
+	\hline
+	\textbf{FR} & \textbf{Summary}                                                & \textbf{Method}         & \textbf{Evidence and conclusion}                                                                                                                                                                       \\
+	\hline
+	\endfirsthead
+	\hline
+	\textbf{FR} & \textbf{Summary}                                                & \textbf{Method}         & \textbf{Evidence and conclusion}                                                                                                                                                                       \\
+	\hline
+	\endhead
+	\hline
+	\multicolumn{4}{|r|}{\emph{Continued on next page}}                                                                                                                                                                                                                                                              \\
+	\hline
+	\endfoot
+	\hline
+	\endlastfoot
+
+	FR1         & Sign up, log in, log out, remain authenticated.                 & Manual checks           & Account creation, login, page refresh, and logout manually checked. Basic auth flow validated.
+	\hline
+	FR2         & Store and update an SSH public key.                             & Manual checks           & Settings page tested for key storage and update. Launch route refuses to proceed without a configured key.                                                                                             \\
+	\hline
+	FR3         & Select vulnerability category and difficulty.                   & Harness + manual checks & Dashboard exposes all categories and difficulties. Final evaluation exercised all five categories and three difficulty levels.                                                                         \\
+	\hline
+	FR4         & Dynamically generate a vulnerability scenario.                  & Automated harness       & 72/75 runs succeeded (96\%). Strong evidence for generation reliability, though not perfectly consistent.                                                                                              \\
+	\hline
+	FR5         & Provision a fresh vulnerable environment.                       & Automated harness       & 71/75 runs succeeded (95\%). The single failure was an infrastructure orchestration issue unrelated to the generated challenge.                                                                        \\
+	\hline
+	FR6         & Inject learner SSH credentials into the environment.            & Harness + manual checks & SSH key injection is part of every deployment; the lifecycle playbook creates the \lstinline{student} user and installs the public key. Supported by 71/75 deployment successes and manual SSH access. \\
+	\hline
+	FR7         & Inject generated vulnerable content.                            & Automated harness       & 71/75 runs succeeded (94\%), covering files, packages, services, ownership, modes, and setup commands.                                                                                                 \\
+	\hline
+	FR8         & Verify challenge health before the user sees it.                & Automated harness       & Health verification passed in 69/75 runs (92\%). Failed checks prevented broken challenges from being counted as successful.                                                                           \\
+	\hline
+	FR9         & Provide sufficient information to access the challenge.         & Manual checks           & Active challenge response includes IP, hostname, SSH user, and a ready-to-copy \lstinline{ssh student@<ip>} command. Validated through the dashboard.                                                  \\
+	\hline
+	FR10        & Submit a flag and receive feedback.                             & Manual checks           & Correct and incorrect flag submissions manually tested. Correct flag updates challenge status, incorrect flag is rejected.                                                                             \\
+	\hline
+	FR11        & Prevent indefinite resource use.                                & Harness + manual checks & Cleanup succeeded for 71/71 containers (100\%). Server side expiry and the Proxmox TTL reaper provide two cleanup paths.                                                                               \\
+	\hline
+	FR12        & Allow the learner to end a challenge manually.                  & Harness + manual checks & Container destruction exercised in all 71 cleanup cases. Manual deletion via the dashboard also validated.                                                                                             \\
+	\hline
+	FR13        & AI tutor gives guidance without revealing the answer.           & Manual checks           & Tutor tested with hint requests and direct flag requests. Used challenge metadata for relevant hints; unsafe responses were blocked.                                                                   \\
+	\hline
+	FR14        & Review previous challenge attempts.                             & Manual checks           & History and detail pages manually checked. Previous challenges show status, message counts, solution summaries, and persisted tutor conversations.                                                     \\
+	\hline
+	FR15        & Support evaluation of generation and orchestration reliability. & Automated harness       & Strongly satisfied. The harness produced JSON, CSV, Markdown summaries, stage timings, failure stages, and heuristic classifications for all 75 runs.                                                  \\
+	\hline
+\end{longtable}
+
+
+The requirements evaluation shows that all functional requirements were implemented to MVP level. The strongest evidence is for FR4-FR8, FR11, FR12, and FR15 because these are exercised repeatedly by the automated harness. The weaker evidence is for FR1-FR3, FR9, FR10, FR13, and, FR14 because these were validated manually. That limitation is acceptable for the stated MVP objective, but future work should convert the most important manual checks into automated integration tests.
+
+The most important distinction is that this validation confirms functional behaviour, not educational effectiveness. For example, FR13 is satisfied if the tutor is challenge aware and does not leak the flag or full solution during manual checks. It does not prove that the hints improve learner understanding. Similarly, FR14 is satisfied if previous attempts and tutor history can be reviewed, it does not prove that learners find the review useful. Those questions would require a separate user study or expert review and are outside the MVP evaluation scope.
+
+\subsection{Limitations}\label{sec:eval-limitations}
+
+The evaluation has several limitations. First, the sample size was limited by both compute and AI token credits. More runs would improve confidence, especially for weaker categories such as insecure file permissions and for category and difficulty combinations with only 60.0\% success. Secondly, concurrency affected the evaluation environment. The final run used a concurrency value of 15 to complete in a practical time, but this placed load on the Proxmox host and produced one infrastructure failure. A future evaluation should separate two experiments, a low concurrency correctness run to measure generated challenge quality, and a high concurrency stress run to measure infrastructure capacity. Thirdly, the evaluation does not include a formal user study. It verifies technical solvability, but not learner experience, hint usefulness, or perceived difficulty, however, this was not feasible in the projects timeframe. Future work should include either expert review of generated challenges or small task based user testing. Fourthly, failure classifications are heuristic. They are useful triage labels, but they are not definitive proof of root cause. Manual review remains necessary for uncertain semantic failures.
