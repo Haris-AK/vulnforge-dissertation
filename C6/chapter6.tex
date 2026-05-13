@@ -5,10 +5,6 @@
 % SPDX-License-Identifier: LPPL-1.3c
 % =============================================================================
 
-This chapter reflects on the transferable learning from the project. It focuses less on individual technical skills and more on how VulnForge changed the assumptions I used to make design, implementation, and evaluation decisions.
-
-\section{Critical narrative of the experience}\label{sec:challenges}
-
 At the start of the project, I treated VulnForge mainly as an integration problem. My assumption was that the main difficulty would be connecting a web interface, an \gls{llm}, Ansible, and Proxmox so that a learner could request a vulnerable container. That assumption was too narrow. The harder problem was deciding whether an automatically generated challenge was safe, usable, educationally meaningful, and reliable enough to expose to a learner.
 
 The first major change in thinking concerned \gls{llm} output. I initially viewed prompt design as the main control mechanism: if the prompt was specific enough, the model would produce usable files and commands. In practice, generated output could be malformed, unsafe, incomplete, plausible but wrong, or valid in structure but unsuitable for the intended category. The design therefore moved from free form generation towards a structured vulnerability specification validated by Zod and policy checks. This changed my assumption from ``the model authors the challenge'' to ``the model proposes data that the platform may accept, reject, or verify''.
