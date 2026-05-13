@@ -7,7 +7,7 @@
 
 This chapter describes how VulnForge was designed, and implemented. The specification states what the system is required to do and the constraints that shaped the solution. The design then explains the main architectural decisions and the viewpoints needed to understand the platform: architecture, data model, challenge lifecycle, generation, verification, tutoring, and history. The implementation section describes how the most important design ideas were realised in the codebase, focusing on the parts that are critical to the system or that caused notable implementation problems.
 
-The methodology follows an iterative build and evaluate approach. Each major design choice was made to support the research question: "Whether generated vulnerable environments can be created, deployed, validated, used and cleaned up reliably in a controlled educational setting". For this reason, the chapter doe not only describe the final architecture used, but also why particular technologies and guard rails were selected, and how the system can be reproduced.
+The methodology follows an iterative build and evaluate approach. Each major design choice was made to support the research question: "Whether generated vulnerable environments can be created, deployed, validated, used and cleaned up reliably in a controlled educational setting". For this reason, the chapter does not only describe the final architecture used, but also why particular technologies and guard rails were selected, and how the system can be reproduced.
 
 \section{Specification}\label{sec:spec}
 
@@ -30,7 +30,9 @@ The main operating assumptions are:
 
 These assumptions restrict the project scope. VulnForge does not attempt to implement payment, public cloud scaling, browser-based terminals, end-user Proxmox administration, or a complete managed VPN. The core purpose is to demonstrate controlled generation, deployment, verification, guided assistance, flag submission, and cleanup for short-lived vulnerable machines.
 
-The requirements were defined from the minimum lifecycle needed for a usable generated challenge. A challenge must be generated, accessed, verified, completed, recorded and cleaned up. Requirements that do not support this lifecycle, such as a scoreboard, or large scale administration were excluded in order to keep the prototype focused on feasibility and evaluation of the current pipeline.
+The requirements were derived from the minimum lifecycle we deemed necessary for a useable generated challenge. Requirements that did not directly support this lifecycle were excluded in order to focus on feasbility and reliability of the existing requirements.
+
+
 
 \subsection{Functional requirements}\label{sec:functional_requirements}
 
@@ -126,7 +128,7 @@ The requirements were defined from the minimum lifecycle needed for a usable gen
 
 The architecture of VulnForge uses a full-stack Next.js application as the control plane. It is connected to SQLite for persistent state, OpenRouter for LLM calls, Ansible for automation, and Proxmox VE for container lifecycle management.
 
-This architecture was chosen to keep untrusted generation, user interaction, and inrastructure control separated. The web application acts as the only user facing control plane, so they do not interact with orchestration, OpenRouter is used for the vast choice of LLM models, wit output being structured data. Ansible performs repeatable infrastructure operations with Proxmox isolating each container from one another. This makes the system easier to test as each stage that may fail can be recorded independently during evaluation.
+This architecture was chosen to keep untrusted generation, user interaction, and inrastructure control separated. The web application acts as the only user facing control plane, so they do not interact with orchestration, OpenRouter is used for the vast choice of LLM models, with output being structured data. Ansible performs repeatable infrastructure operations with Proxmox isolating each container from one another. This makes the system easier to test as each stage that may fail can be recorded independently during evaluation.
 
 \begin{figure}[htbp]
 	\centering
@@ -135,7 +137,7 @@ This architecture was chosen to keep untrusted generation, user interaction, and
 	\label{fig:system-architecture}
 \end{figure}
 
-Figure ~\ref{fig:system-architecture} shows the deployment boundary used throughout the project. The learner interacts only with the web application and their assigned container. It is responsible for authentication, state management, generation requests, orchestration calls and flag submissions. OpenRouter calls all occur server side, with Ansible and Proxmox never being exposed to the user. This design was chosen in order to minimise the number of entry points the user has to interact with, and also to make the system reproducible. You can replace the web app with another if you prefer, you can change the orchestration layer to a cloud based one, or you can change the LLM library being used, with all other components still working as expected.
+Figure~\ref{fig:system-architecture} shows the deployment boundary used throughout the project. The learner interacts only with the web application and their assigned container. It is responsible for authentication, state management, generation requests, orchestration calls and flag submissions. OpenRouter calls all occur server side, with Ansible and Proxmox never being exposed to the user. To reproduce this system, a reader would need a Next.js application, configuration environment variables, a SQLite database, Ansible playbooks, an OpenRouter compatible model, and a Proxmox host. This design was chosen in order to minimise the number of entry points the user has to interact with, and also to make the system reproducible. If someone was to reproduce the system, they could replace the web app with another if you prefer, you can change the orchestration layer to a cloud based one, or you can change the LLM library being used, with all other components still working as expected.
 
 The web application is the central authority. It validates user input, manages accounts and sessions, stores challenge state, invokes the LLM, invokes container orchestration, presents the challenge, and confirms completion. Students do not receive Proxmox credentials, Ansible inventory data, API tokens, flags, generated validation commands, or the private solution summary while a challenge is active.
 
@@ -153,6 +155,8 @@ The database contains four main entities: users, sessions, challenges, and messa
 	\caption{Database schema}
 	\label{fig:db_schema}
 \end{figure}
+
+Figure~\ref{fig:db_schema} defines the persistent state needed to reproduce the challenge lifecycle. The \lstinline{users} and \lstinline{sessions} tables support authentication, whilst the \lstinline{challenges} table records the challenge, metadata, status, expiry time, flag, and the solution summary. The \lstinline{messages} table stores tutor interaction against a challenge. This schema helps separate user identity, active infrastructure state and learning history, making it easier to inspect a challenge attempt after an attempt.
 
 The \lstinline|challenges| table is the central domain object. It connects a database record to generated infrastructure by storing the Proxmox VMID, IP address, and hostname. It also stores user-facing metadata such as title, description, category, difficulty, hint, and attack vector. The \lstinline|flag| and \lstinline|solution_summary| fields are private fields used by the flag checker and tutor. Repository methods expose a public challenge object that omits these fields while the challenge is active.
 
@@ -190,6 +194,8 @@ The challenge lifecycle is deliberately simple from the learner's perspective bu
 	\label{fig:challenge_lifecycle}
 \end{figure}
 
+Figure~\ref{fig:challenge_lifecycle} shows the states and transitions between them for a challenge attempt. A challenge enters the \lstinline{active} state only after a successful launch has been inserted into the database. From \lstinline{active}, a correct flag submission changes the status to \lstinline{completed}, if a user deletes their current challenge it changes to \lstinline{deleted} and if it expires, a server side check changes it to \lstinline{expired}. These states prevent a user from continuing to interact with a challenge after it is stale. The separation from database status and container state is intentional, the database record is to record the attempt, and Proxmox and the TTL reaper is used to provide infrastructure cleanup, even if the database state is corrupted.
+
 The application checks challenge status before chat requests, flag submissions, and deletion requests. Chat is only interactive for an active challenge, while history pages allow past messages to be viewed in read-only mode. Correct flag submissions are marked as \lstinline|completed|. Manual deletion marks the challenge as \lstinline|destroyed| immediately and then triggers container deletion asynchronously. Expiry is handled by application-side checks and by a host-side TTL reaper, which is a cronjob running on the Proxmox host, checking every 5 minutes to see if a container has uptime exceeding one hour.
 
 There is a deliberate separation between logical state and infrastructure state. The database may mark a challenge as destroyed before the Ansible destroy playbook has finished. Similarly, the TTL reaper may delete a container before the database is next checked. VulnForge accepts this eventual consistency because the main requirement is to stop users interacting with stale challenges and to prevent indefinite resource use. The design favours safe terminal state transitions and independent cleanup over a more complex distributed transaction between the database and Proxmox.
@@ -205,6 +211,8 @@ Challenge launch is the most complex workflow in the platform. It is exposed to 
 	\label{fig:launch_pipeline}
 \end{figure}
 
+Figure~\ref{fig:launch_pipeline} shows the entire sequence when a learner starts a challenge, the route authenticates the user, validates their SSH key, checks for an existing challenge, and validates the requested category and difficulty. It then moves onto generating the vulnerability specification, optionally performing full verification checks, deploys a fresh user container, injects the LLM specification, runs the health mode verification, and records the challenge in the database. If generation fails, the process stops before the users container is created, if deployment or verification checks fail, the route cleans up the container before returning an error to the user. A final active check on the database occurs before insertion to prevent the risk of race conditions due to multiple challenge generation requests.
+
 The pipeline has two verification levels. Normal launches run health-mode verification, which executes health checks and flag-protection checks. This catches common failures such as a web server not starting, a generated file missing, or the flag being directly readable by the learner. Full exploit verification is controlled by \lstinline|CHALLENGE_FULL_VERIFY_BEFORE_LAUNCH|. When this is enabled, the platform first deploys a disposable verifier container, injects the generated specification, runs exploit checks, destroys the verifier container, and only then deploys a fresh user-facing container.
 
 This split is a deliberate design compromise. Full exploit verification gives stronger evidence that the generated challenge is solvable, but it is slower and can mutate the machine. For example, a privilege escalation exploit might change permissions, add files, or alter service state. Running such checks on the user's final container could partially solve or damage the challenge before the user begins. Health-mode verification is therefore used for normal launches, while full verification is reserved for evaluation or deployments where the extra delay is acceptable.
@@ -219,6 +227,8 @@ The LLM does not directly control the infrastructure. Instead, it produces a str
 	\caption{Generation and policy validation pipeline}
 	\label{fig:generation_policy}
 \end{figure}
+
+Figure~\ref{fig:generation_policy} shows how LLM output is constrained before it reaches the infrastructure layer. The inputs are the selected category, selected difficulty, flag, category, prompt variant and recent challenge history (this is used to increase variance). The expected output is a JSON object matching the \lstinline{VulnerabilitySpecSchema}. The response is parsed, validated against the Zod sdchema, and checked against the semantic policy validation before being passed to the deployment stage. If a response ends up being malformed, violates the schema, or fails policy checks, the generation retries up to the configured attempt amounts (currently 5). This design was chosen as free text generation is difficult to validate, so having a schema for the model to follow makes this easier, we are able to verify it is safe to execute, and that it executes in the intended way.
 
 The specification includes public challenge metadata, deployment instructions, private learning metadata, and private verification metadata. Listing~\ref{lst:vulnerability-spec-schema} shows an abbreviated version of the schema boundary.
 
@@ -243,7 +253,7 @@ export const VulnerabilitySpecSchema = z.object({
 	\label{lst:vulnerability-spec-schema}
 \end{listing}
 
-The choice to use structured output is central to the design. A free-text response from the LLM would be difficult to validate and dangerous to execute. A typed specification creates a contract between the model and the infrastructure pipeline. The rest of the system consumes files, packages, services, setup commands, and validation checks as structured fields rather than interpreting arbitrary natural language.
+The choice to use structured output is central to the design. A free-text response from the LLM would be difficult to validate and dangerous to execute. A typed specification creates a contract between the model and the infrastructure pipeline. Files, packages, services, setup commands, and validation checks as structured fields rather than prose. This gives a boundary where we can stop malformed or unsafe output from being accepted, preventing commands running on the guest that do not follow the intended purpose.
 
 The design uses several safeguards:
 \begin{enumerate}
@@ -266,7 +276,11 @@ Earlier versions of the system checked whether Ansible completed, but Ansible su
 	\label{fig:verification-system}
 \end{figure}
 
+Figure~\ref{fig:verification-system} shows how the generated checks are evaluated. Each command declares a specific context, if they have \lstinline{container_root} they run in the container as root, if they have \lstinline{container_student} they run as the student user. \lstinline{external_http} is used to run commands from outside the container to check exposed web server vulnerabilities. The Ansible playbook runs these checks with \lstinline{ignore_errors} so if one check fails, we can still record the state of the others. The TypeScript runner checks the result from each command with the expected exit code, required output, or forbidden output. This design was chosen as it allows us to know if a generated challenge is usable, if a service does not start, but the flag is still present, this is still a failure, the entire intended exploit path should work.
+
 Each validation command contains a name, description, context, command string, timeout, expected exit code, expected stdout/stderr conditions, and a \lstinline|must_recover_flag| field. The runner supports three execution contexts.
+
+Generated validation commands were chosen over a library of per category checks, as the generated content will vary between runs. A fixed check for privilege escalation using a specific SUID binary may work, but then if there's a specifically vulnerable script, this fixed check may not. By having the validation commands generated alongside the specific vulnerability specification, we can check exact paths, permissions and expected exploit conditions for that specific vulnerability, helping mitigate this issue. However, there is a tradeoff, the checks are also generated by the LLM meaning that they are also classed as untrusted, which is why the runner constrains the contexts in which they can be executed.
 
 \begin{table}[htbp]
 	\centering
@@ -293,6 +307,8 @@ The tutor is a challenge-aware assistant rather than a general chatbot. When a u
 
 The tutor's purpose is to provide progressive guidance. It should explain concepts and suggest methods, but it should not reveal the flag or provide the full exploit path in one response. The design uses two layers of protection. First, the tutor system prompt instructs the model not to reveal the flag, exact flag path, or full step-by-step solution. Secondly, the application checks the generated response before streaming it back. If the response contains a \lstinline|FLAG{...}| pattern, the exact stored flag, or the full normalised solution summary, the response is replaced by a block message asking the user to request a smaller hint.
 
+This two layer approach is intentional. The system prompt reduces the chance that the model will reveal the answer during normal use, but still relies on the model following this instruction, and as we have users that are acting as adversaries, prompt injection is a real possibility. That is why the second stage is useful, it is defence in depth. Whilst this will not guarantee prevention of prompt injection, or unexpected behavior by the model, it is able to mitigate it, and enforce the most important leakage constraints.
+
 Messages are persisted after a complete assistant response. This supports continuity during an active challenge and enables read-only review in the history page after a challenge has ended.
 
 \subsection{Challenge history and learning review}\label{sec:challenge-history}
@@ -313,7 +329,9 @@ The evaluation harness was designed to provide evidence about the whole generate
 	\label{fig:evaluation-harness-design}
 \end{figure}
 
-The harness separates evaluation into four modes, shown in Table~\ref{tab:evaluation-modes}. This separation was important because not every failure has the same meaning. A static failure indicates a problem with model output, a deployment failure indicates an infrastructure problem, an injection failure indicates that the generated specification cannot be inserted inside the container, and a verification failure may indicate either a broken challenge or a brittle generated check. Separating the stages makes it possible to analyse where reliability is lost.
+Figure~\ref{fig:evaluation-harness-design} shows the experimental workflow used to evaluate the platform. It parses CLI options, builds a list of tasks based on the mode, category, difficulty and repetition count and executes them. Each task records generation, deployment, injection, verification and cleanup as separate stages when applicable. For each stage, we record the success or failure, failure reason if applicable, duration and artefacts such as the LLM generation and verification specification. We write it to JSON, CSV and markdown to allow various different summaries, the markdown for a brief overview, the JSON for debugging, and the CSV for report generation and overall summaries. It also writes progressively as we experienced that sometimes the harness would fail midway, so having it write incrementally meant we did not lose results. This allowed us to figure out where the pipeline was going wrong, as we had visibility as whether it was attributed to generation, infrastructure, verification etc.
+
+The harness separates evaluation into four modes, shown in Table~\ref{tab:evaluation-modes}. This separation was important because not every failure has the same meaning, and a single failure for the entire pipeline is hard to diagnose. A static failure indicates a problem with model output to our specification, a deployment failure indicates an infrastructure problem, an injection failure indicates that the generated specification cannot be inserted inside the container, and a verification failure may indicate either a broken challenge or a brittle generated check. Separating the stages makes it possible to analyse where reliability is lost.
 
 \begin{table}[htbp]
 	\centering
@@ -339,6 +357,8 @@ The harness separates evaluation into four modes, shown in Table~\ref{tab:evalua
 Each run records both stage outcomes and evidence for later analysis. This includes the generated title, attack vector, file counts, a hash of the generated files, stage durations, verification results, cleanup result, and a failure classification. The file hash gives a compact way to compare generated artefacts without relying only on titles or descriptions. The failure classification is deliberately heuristic rather than authoritative; it supports analysis by grouping likely generation, infrastructure, validation test, timing, and uncertain semantic failures, but individual failures can still require manual inspection, which was done during testing.
 
 The design choice to call the same generation, deployment, injection, verification, and cleanup modules as the application was deliberate. It means the evaluation measures the implemented pipeline rather than a separate mock implementation. The trade off is that full evaluation is slower, depends on the Proxmox host, and can be affected by external infrastructure conditions. This is acceptable because infrastructure reliability is part of the practical feasibility of the project.
+
+To reproduce an evaluation, the configuration should specify the mode, vulnerability categories, difficulty, number of repetitions, concurrency level, and output directory. Existing host options such as LLM configuration, Proxmox API keys, and LXC templates need to also be defined.
 
 \section{Implementation}\label{sec:impl}
 
@@ -366,7 +386,7 @@ The application is implemented with Next.js, React, TypeScript, Drizzle ORM, SQL
 	\label{tab:implementation-areas}
 \end{table}
 
-Drizzle runs migrations automatically when the database connection is created. SQLite is configured with WAL mode and foreign keys enabled. WAL mode is useful because the application performs concurrent reads and writes during actions such as challenge launch, history loading, and chat persistence.
+Drizzle runs migrations automatically when the database connection is created. SQLite is configured with WAL mode and foreign keys enabled. WAL mode is useful because the application performs concurrent reads and writes during actions such as challenge launch, history loading, and chat persistence. Next.js was chosen due to file based API routing, allowing it to sit alongside React in a single deployable location for simplicity as web development was not the focus of this project. Avoiding a separate back end service reduced complexity here, SQLite benefited simplicity here too, instead of having a server database, we could store a local db file. There did not need to be a separate database process or connection pool, we just required a single file. DrizzleORM was used as it provides type safe queries and keeps a relationship between the database schema and TypeScript models.
 
 \subsection{Authentication, settings, and user state}\label{sec:auth-settings}
 
@@ -447,11 +467,11 @@ Setup commands run as root inside the container as it is required for some scena
 
 \subsection{Verification Implementation}\label{sec:verification-implementation}
 
-Verification is implemented with the \lstinline{verifyInjectedChallenge()} method and the \lstinline{verify-vulnerability.yml} playbook. The TypeScript runner checks to see what level of checks to run based on the health mode. \lstinline{health} mode runs the \lstinline{validation.health_checks} and the \lstinline{validation.flag_protection_checks} methods. If we run on \lstinline{full} mode, it also runs the \lstinline{validation.exploit_checks} method. This takes substantially more time, but is largely used during testing to ensure a type of vulnerability works as expctected, but will not run each time a user decides to spin up a machine. As each vulnerability can vary, these checks are generated by the model in a separate prompt, following a custom Zod schema, similar to the vulnerability generation. This is not foolproof, however, it does provide a layer of protection to ensure the vulnerabilityis exploitable by the end user, in the manner that was intended.
+Verification is implemented with the \lstinline{verifyInjectedChallenge()} method and the \lstinline{verify-vulnerability.yml} playbook. The TypeScript runner checks to see what level of checks to run based on the health mode. \lstinline{health} mode runs the \lstinline{validation.health_checks} and the \lstinline{validation.flag_protection_checks} methods. If we run on \lstinline{full} mode, it also runs the \lstinline{validation.exploit_checks} method. This takes substantially more time, but is largely used during testing to ensure a type of vulnerability works as expected, but will not run each time a user decides to spin up a machine.
 
 Before execution, the runner substitutes values such as \lstinline{TARGET_IP}, \lstinline{VMID}, \lstinline{TARGET_URL} and \lstinline{FLAG}. It will write the checks to a temporary JSON file and then call the verification playbook. The playbook will go through each command, run them, and return the result of the command in JSON. The runner will evaluate the exit codes of the commands, any required stdout / stderr, forbidden stdout strings, and whether the flag was able to be recovered if the \lstinline{must_recover_flag} is true.
 
-As mentioned previously, the health mode check is used during regular launches. If any of these fail, then the launch route will destroy the container and return an error instead of writing a challenge to the database. Full mode verification is optionally used, often during evaluation. Another reason why we do not use it during regular launches is that some of the exploit checks can mutate the state of the machine, for example, when testing it may alter \lstinline{etc/passwd}, and having that in the users container would damage the integrity of the challenge. To partially mitigate this, there is a desposable 'verifier' container used, but this 'verifier' container can still end up modifying the challenge contanier.
+As mentioned previously, the health mode check is used during regular launches as it is intended to be non destructive. It checks that the challenge is reachable, and the flag was not exposed unintentionally. If any of these fail, then the launch route will destroy the container and return an error instead of writing a challenge to the database. Full mode verification is optionally used, often during evaluation. As it is meant to mutate or partially solve whatever challenge it is deployed on, it has to be carefully managed. To do this, full verification uses a disposable container rather than the final user facing container, the verifier can be mutated or solved, and then destroyed. If verification passes, a fresh user container is created for the learner. If this was not the case, and it ran on the original container, it could ruin a challenge, for example, it may change permissions on a \lstinline{etc/passwd} file that the user was meant to figure out how to do. This preserves integrity of the learners challenge whilst allowing deeper verification during evaluation.
 
 \subsection{Evaluation harness implementation}\label{sec:evaluation-harness-implementation}
 
@@ -497,7 +517,8 @@ The delete route is located in \lstinline{app/api/challenges/[id]/route.ts}. It 
 	\label{fig:tutor-chatbot-flow}
 \end{figure}
 
-The tutor chatbot is shown to a user once they are one the dashboard screen. The API accepts a message and challenge ID, requiring authentication, a user to have an active challenge, and that the request challenge ID matches the active challenge ID. This prevents a user from asking the tutor about another users challenge or an inactive challenge. The route loads the persisted message history, appending the new user message, and sends the conversation to OpenRouter with a system prompt that specifies that it should not leak private challenge context. The response is generated, checked for any forbidden data leaks, streamed back to the client, and then persisted with the user message. It is important to note that the persistence of messages only occurs after a successful response, so any failed streams do not result in misleading historical chat logs.
+Figure ~\ref{fig:tutor-chatbot-flow} shows the route for each message. The tutor chatbot is shown to a user once they are one the dashboard screen. The API accepts a message and challenge ID, requiring authentication, a user to have an active challenge, and that the request challenge ID matches the active challenge ID. This prevents a user from asking the tutor about another users challenge or an inactive challenge. The route loads the persisted message history, appending the new user message, and sends the conversation to OpenRouter with a system prompt that specifies that it should not leak private challenge context. The response is generated, checked for any forbidden data leaks, streamed back to the client, and then persisted with the user message. It is important to note that the persistence of messages only occurs after a successful response, so, any failed streams do not result in misleading historical chat logs.
+
 
 The UI component, named \lstinline{ChatPanel} loads previous messages once the component is mounted, streams the new response into the assistant message (the chatbot), and then if the user is on a history page, it is marked as read only. The message repository which handles all this inserts user assistant messages as pairs inside each transaction, with a timestamp to preserve the order of messages. So each transaction to insert a message has to have a user message and assistant message.
 
