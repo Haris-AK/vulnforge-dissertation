@@ -381,18 +381,18 @@ The application is implemented with Next.js, React, TypeScript, Drizzle ORM, SQL
 		\hline
 		Challenge APIs and tutor                 & \lstinline|app/api/challenges/*|, \lstinline|app/api/chat/route.ts|, \lstinline|ChatPanel.tsx|                         \\
 		\hline
-		Evaluation support                       & \lstinline|scripts/evaluate.ts| and generated results                                                                  \\
+		Evaluation support                       & \lstinline|scripts/evaluate.ts|
 		\hline
 	\end{tabular}
 \end{table}
 
-Drizzle runs migrations automatically when the database connection is created. SQLite is configured with WAL mode and foreign keys enabled. WAL mode is useful because the application performs concurrent reads and writes during actions such as challenge launch, history loading, and chat persistence. Next.js was chosen due to file based API routing, allowing it to sit alongside React in a single deployable location for simplicity as web development was not the focus of this project. Avoiding a separate back end service reduced complexity here, SQLite benefited simplicity here too, instead of having a server database, we could store a local db file. There did not need to be a separate database process or connection pool, we just required a single file. DrizzleORM was used as it provides type safe queries and keeps a relationship between the database schema and TypeScript models.
+Drizzle runs migrations automatically when the database connection is created. SQLite is configured with WAL mode and foreign keys enabled. WAL mode is useful because the application performs concurrent reads and writes during actions such as challenge launch, history loading, and chat persistence. Next.js was chosen due to file based API routing, allowing it to sit alongside React in a single deployable location for simplicity as web development was not the focus of this project. Avoiding a separate back end service reduced complexity here, SQLite also benefited simplicity , instead of having a server database, we could store a local db file. There did not need to be a separate database process or connection pool. DrizzleORM was used as it provides type safe queries and keeps a relationship between the database schema and TypeScript models.
 
 \subsection{Authentication, settings, and user state}\label{sec:auth-settings}
 
-Authentication is implemented with email/password accounts. Passwords are hashed with bcrypt before storage. A successful login creates a session row and sets an HTTP-only cookie named \lstinline|session_token|. The cookie is marked secure in production and has a seven day expiry. API routes that require login call \lstinline|requireAuth()|, which reads the cookie, checks that the session exists and has not expired, and loads the corresponding user.
+Authentication is implemented with email/password accounts. Passwords are hashed with bcrypt before storage. A successful login creates a session row and sets an HTTP-only cookie named \lstinline|session_token|. The cookie has a seven day expiry. API routes that require login call \lstinline|requireAuth()|, which reads the cookie, checks that the session exists and has not expired, and loads the corresponding user.
 
-The settings route allows the user to update their SSH public key and password. SSH key input is validated with a regular expression that accepts common public key types, including \lstinline|ssh-ed25519|, \lstinline|ssh-rsa|, ECDSA keys, and security key backed Ed25519 keys. The launch route refuses to provision a challenge if the authenticated user has not stored an SSH public key. This moves key configuration failure to the start of the workflow, before any LLM call or container creation occurs.
+The settings route allows the user to update their SSH public key and password. SSH key input is validated with a regular expression that accepts common public key types, including \lstinline|ssh-ed25519|, \lstinline|ssh-rsa|, \lstinline{ECDSA} keys, and security key backed \lstinline{ed25519} keys. The launch route refuses to provision a challenge if the authenticated user has not stored an SSH public key. This moves key configuration failure to the start of the workflow, before any LLM call or container creation occurs.
 
 \begin{figure}[htbp]
 	\centering
@@ -412,21 +412,21 @@ Repository modules wrap database access for users, sessions, challenges, and mes
 	\label{fig:db-repositories}
 \end{figure}
 
-The challenge repository creates new challenges with \lstinline|status = 'active'|, an expiry time one hour after creation, and a \lstinline|completed_at| timestamp. It provides methods for finding the active challenge for a user, retrieving all challenges for history, finding prior challenges in a category for diversity prompting, finding expired active challenges, and transitioning a challenge into a terminal state.
+The challenge repository creates new challenges with \lstinline|status = 'active'|, an expiry time one hour after creation, and a \lstinline|completed_at| timestamp. It provides methods for finding the active challenge for a user, retrieving all challenges for history, finding prior challenges in a category for diverse prompting, finding expired active challenges, and transitioning a challenge into another state.
 
 The one active challenge rule is enforced in three layers:
 \begin{enumerate}
-	\item the launch route checks for an existing active challenge at request start;
-	\item the launch route rechecks immediately before database insertion, after the slow generation and provisioning steps;
+	\item The launch route checks for an existing active challenge at request start.
+	\item The launch route rechecks immediately before database insertion, after the slow generation and provisioning steps.
 	\item the database has a partial unique index on active challenges for each user.
 \end{enumerate}
 The database index is the strongest layer because it handles race conditions that application checks cannot fully prevent.
 
 \subsection{OpenRouter generation implementation}\label{sec:openrouter-implementation}
 
-The generation entry point is \lstinline|generateVulnerability()| in \lstinline|app/lib/openrouter.ts|. It generates a random server side flag, builds a category specific prompt, converts the Zod vulnerability schema to JSON Schema, calls OpenRouter with a structured response format, parses the returned JSON, validates it against \lstinline|VulnerabilitySpecSchema|, runs semantic policy validation, and returns the validated specification and flag.
+The generation entry point is \lstinline|generateVulnerability()| in \lstinline|app/lib/openrouter.ts|. It generates a random server side flag, builds a category specific prompt, converts the Zod vulnerability schema to JSON schema, calls OpenRouter with a structured response format, parses the returned JSON, validates it against \lstinline|VulnerabilitySpecSchema|, runs semantic policy validation, and returns the validated specification and flag.
 
-The OpenRouter client is deliberately small. It handles model availability checks and chat completions for generation and tutor calls. A separate fallback helper builds a model chain from environment variables and defaults, removes duplicates, and retries retryable failures. Incomplete responses are treated as retryable because truncated JSON was a practical failure mode during development.
+The OpenRouter client is deliberately small. It handles model availability checks and chat completions for generation and tutor calls. A separate fallback helper builds a model chain from environment variables and defaults, removes duplicates, and retries retryable failures. Incomplete responses are treated as retryable because truncated JSON was a practical failure mode during development, that could often be recovered.
 
 \subsection{Prompt catalogue and diversity implementation}\label{sec:prompt-catalogue}
 
@@ -438,25 +438,25 @@ The prompt builder chooses a variant randomly and, for web categories, chooses a
 
 Container deployment is implemented through \lstinline|deploy.yml| and the LXC lifecycle role. The playbook creates an Ubuntu 24.04 unprivileged LXC container with one core, 1024 MB memory, an 8 GB root filesystem, static networking on \lstinline|vmbr0|, and the \lstinline|vulnforge| tag. The IP address is static from the reserved range of 192.168.0.201-192.168.0.249, DHCP would occasionally cause failures. It then starts the container, creates the \lstinline|student| user, injects the user's SSH key, waits for an IP address, and writes a deployment artefact containing the VMID, hostname, IP address, and configuration details.
 
-The TypeScript wrapper executes \lstinline|ansible-playbook| using \lstinline|execFile()| rather than shell interpolation. Extra variables such as the SSH public key are passed as JSON. This reduces shell injection risk and avoids quoting problems with SSH keys. A key implementation issue was SSH key injection: public keys contain spaces and can include comments, so interpolating them into shell commands is fragile. The final playbook writes the key to a temporary file on the host, uses \lstinline|pct push| to place it into the container as \lstinline|authorized_keys|, and then sets ownership and permissions inside the container.
+The TypeScript wrapper executes \lstinline|ansible-playbook| using \lstinline|execFile()| rather than shell interpolation. Extra variables such as the SSH public key are passed as JSON. This reduces shell injection risk and avoids quotation mark problems with SSH keys. A key implementation issue was SSH key injection, where public keys contain spaces and can include comments, so interpolating them into shell commands is fragile. The final playbook writes the key to a temporary file on the host, uses \lstinline|pct push| to place it into the container in \lstinline|~/.ssh/authorized_keys|, and then sets ownership and permissions inside the container.
 
 \subsection{Vulnerability injection implementation}\label{sec:vuln-injection}
 
 The injection boundary is defined inside the \lstinline{VulnerabilitySpec}, with the TypeScript runner writing this spec to a temporary JSON file, then passing it to the \lstinline{inject-vulnerability.yml} plyabook. The playbook does the following:
 
 \begin{enumerate}
-	\item Validates inputs such as VMID and the spec file
-	\item Loads the JSON spec file
-	\item Updates the APT cache so packages are up to date
-	\item Installed requested packages from the spec file
-	\item Creates a temporary staging directory on the host, this is for files that the LLM has generated that are needed for the vulnerability
-	\item Creates the directories that the LLM has specified are needed, this could be the web application directory for example
-	\item Copies the files into the specified directories, from the temporary staging directory
-	\item Applies any required ownership changes, commonly required for privilege escalation, or privilege misconfiguration
-	\item Removes the staging directory
-	\item Starts and or enables services
-	\item Runs any setup commands required
-	\item Performs a final restart on required services to ensure all are running smoothly
+	\item Validates inputs such as VMID and the spec file.
+	\item Loads the JSON spec file.
+	\item Updates the APT cache so packages are up to date.
+	\item Installed requested packages from the spec file.
+	\item Creates a temporary staging directory on the host, this is for files that the LLM has generated that are needed for the vulnerability.
+	\item Creates the directories that the LLM has specified are needed, this could be the web application directory for example.
+	\item Copies the files into the specified directories, from the temporary staging directory.
+	\item Applies any required ownership changes, commonly required for privilege escalation, or privilege misconfiguration.
+	\item Removes the staging directory.
+	\item Starts and or enables services.
+	\item Runs any setup commands required.
+	\item Performs a final restart on required services to ensure all are running smoothly.
 \end{enumerate}
 
 When using a staging directory to push files, we have to use \lstinline{pct push} rather than \lstinline{pct exec} as this could cause shell escaping issues where file content may contain quotes, dollar signs or other special characters. These are common in PHP, SQL, HTML and JavaScript code that is commonly copied for web vulneraiblities. Having a staging section means that we can avoid this, however, this does partially come at a increased time cost as they are copied twice, but for smaller scale vulnerabilities, this is negligible.
@@ -490,7 +490,7 @@ The harness writes three main outputs after runs complete:
 \end{enumerate}
 
 
-Failure classification is implemented by \lstinline{classifyFailedRun()}. It uses the recorded failure stage, error text, verification groups, command exit codes, and flag recovery evidence to assign triage labels such as \lstinline{generation_schema_failure}, \lstinline{generation_policy_failure}, \lstinline{infrastructure_orchestration_failure}, \lstinline{llm_challenge_configuration_failure}, \lstinline{generated_validation_test_failure}, \lstinline{evaluator_timing_fragility}, or \lstinline{uncertain_semantic_failure}. These labels are not treated as proof; they are a practical way to make the evaluation results interpretable before manual review. Having these indicators made it much easier to identify issues.
+Failure classification is implemented by \lstinline{classifyFailedRun()}. It uses the recorded failure stage, error text and exit codes to assign labels such as \lstinline{generation_schema_failure}, \lstinline{generation_policy_failure}, and \lstinline{infrastructure_orchestration_failure}. These labels are not treated as proof, instead they are a practical way to make the evaluation results interpretable before manual review. Having these indicators made it much easier to identify issues.
 
 One implementation problem was that early evaluation failures were too broad. A single failed run could hide whether the model generated invalid JSON, the container failed to start, a service failed after injection, the flag was exposed directly, or the exploit command was simply brittle. The final harness addresses this by preserving command results, validation groups, stage timings, and classification reasons.
 
@@ -498,12 +498,12 @@ One implementation problem was that early evaluation failures were too broad. A 
 
 The launch route is located in \lstinline{app/api/challenge/launch/route.ts}. It uses server sent events to continually update the user as to the state of the challenge whilst it is being created. Authentication, SSH key validation, active challenge checks, and request validation occur before we being the stream to the user. Once the user has selected a type of challenge, and difficulty, and we have done all the verification on the backend, the stream begins, and the user receives progress and errors relating to the challenge.
 
-The progress messages relate to generation, verficiation, deployment, injection, and health verification. On success, it returns the challenge object with the SSH command the user would use, on failure, it attempts to destroy the container, and returns an error message to the user. It also handles a race condition, as generation and injection can take a while, the route checks again for an active challenge immediately before inserting a new challenge. If there is another challenge which has been inserted into the database, the duplicate is cleaned up.
+The progress messages relate to generation, verficiation, deployment, injection, and health verification. On success, it returns the object with the SSH command the user would use, on failure, it attempts to destroy the container, and returns an error message to the user. It also handles a race condition, as generation and injection can take a while, the route checks again for an active challenge immediately before inserting a new challenge. If there is another challenge which has been inserted into the database, the duplicate is cleaned up.
 
-This route also handles stale active challenges. If an existing active challenge is past the expiration time, the launch route firstly attempts to destroy it and marks the challenge as incomplete before the user continues. This avoids stopping a user from creating a new challenge if a previously expired one is just left without being cleaned up for whatever reaosn.
+This route also handles stale active challenges. If an existing active challenge is past the expiration time, the launch route firstly attempts to destroy it and marks the challenge as incomplete before the user continues. This avoids stopping a user from creating a new challenge if a previously expired one is just left without being cleaned up for whatever reason.
 
 \subsection{Flag submission and cleanup}\label{sec:flag-submission-and-cleanup}
-Flag submission occurse through the route \lstinline{app/api/challenge/submit-flag/route.ts}. This route validates the request body (including checking if the user / request is authenticated), checks the challenge exists and belongs to the current user, verifies that it is still active, and compares the submitted flag to the stored flag. If it is correct, the challenge is marked as complete, and the challenge is destroyed.
+Flag submission occurs through the route \lstinline{app/api/challenge/submit-flag/route.ts}. This route validates the request body (including checking if the user / request is authenticated), checks the challenge exists and belongs to the current user, verifies that it is still active, and compares the submitted flag to the stored flag. If it is correct, the challenge is marked as complete, and the challenge is destroyed.
 
 The delete route is located in \lstinline{app/api/challenges/[id]/route.ts}. It requires the same authentication as before, marks the challenge as destroyed, and asynchronously invokes the container destruction. This is to help make sure the UI is responsive, even if the container deletion is slow for whatever reason. The TTL reaper on the Proxmox host is still present, acting as a safety net for infrastructure cleanup.
 
