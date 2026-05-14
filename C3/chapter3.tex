@@ -30,7 +30,7 @@ The main operating assumptions are:
 
 These assumptions restrict the project scope. VulnForge does not attempt to implement cloud scaling or browser based terminals. The core purpose is to demonstrate controlled generation, guided assistance, and cleanup.
 
-The requirements were derived from the minimum lifecycle we deemed necessary for a useable challenge. Requirements that did not support this lifecycle were excluded in order to focus on feasbility and reliability of the existing requirements.
+The requirements were derived from the minimum lifecycle we deemed necessary for a usable challenge. Requirements that did not support this lifecycle were excluded in order to focus on feasibility and reliability of the existing requirements.
 
 \subsection{Functional requirements}\label{sec:functional_requirements}
 
@@ -188,7 +188,7 @@ The challenge lifecycle is deliberately simple from the learner's perspective bu
 	\label{fig:challenge_lifecycle}
 \end{figure}
 
-Figure~\ref{fig:challenge_lifecycle} shows the states and transitions between them for a challenge attempt. A challenge enters the \lstinline{active} state only after a successful launch has been inserted into the database. From \lstinline{active}, a correct flag submission changes the status to \lstinline{completed}, if a user deletes their current challenge it changes to \lstinline{deleted} and if it expires, a server side check changes it to \lstinline{expired}. These states prevent a user from continuing to interact with a challenge after it is stale. The separation from database status and container state is intentional, the database record is to record the attempt, and Proxmox and the TTL reaper is used to provide infrastructure cleanup, even if the database state is corrupted.
+Figure~\ref{fig:challenge_lifecycle} shows the states and transitions between them for a challenge attempt. A challenge enters the \lstinline{active} state only after a successful launch has been inserted into the database. From \lstinline{active}, a correct flag submission changes the status to \lstinline{completed}, if a user deletes their current challenge it changes to \lstinline{destroyed} and if it expires, a server side check changes it to \lstinline{expired}. These states prevent a user from continuing to interact with a challenge after it is stale. The separation from database status and container state is intentional, the database record is to record the attempt, and Proxmox and the TTL reaper is used to provide infrastructure cleanup, even if the database state is corrupted.
 
 The application checks challenge status before chat requests, flag submissions, and deletion requests. Chat is only interactive for an active challenge, while history pages allow past messages to be viewed in read-only mode. Correct flag submissions are marked as \lstinline|completed|. Manual deletion marks the challenge as \lstinline|destroyed| immediately and then triggers container deletion asynchronously. Expiry is handled by application side checks and by a host side TTL reaper, which is a cronjob running on the Proxmox host, checking every 5 minutes to see if a container has uptime exceeding one hour.
 
@@ -222,7 +222,7 @@ The LLM does not directly control the infrastructure. Instead, it produces a str
 	\label{fig:generation_policy}
 \end{figure}
 
-Figure~\ref{fig:generation_policy} shows how LLM output is constrained before it reaches the infrastructure layer. The inputs are the selected category, selected difficulty, flag, category, prompt variant and recent challenge history (this is used to increase variance). The expected output is a JSON object matching the \lstinline{VulnerabilitySpecSchema}. The response is parsed, validated against the Zod sdchema, and checked against the semantic policy validation before being passed to the deployment stage. If a response ends up being malformed, violates the schema, or fails policy checks, the generation retries up to the configured attempt amounts (currently 5). This design was chosen as free text generation is difficult to validate, so having a schema for the model to follow makes this easier, we are able to verify it is safe to execute, and that it executes in the intended way.
+Figure~\ref{fig:generation_policy} shows how LLM output is constrained before it reaches the infrastructure layer. The inputs are the selected category, selected difficulty, flag, category, prompt variant and recent challenge history (this is used to increase variance). The expected output is a JSON object matching the \lstinline{VulnerabilitySpecSchema}. The response is parsed, validated against the Zod schema, and checked against the semantic policy validation before being passed to the deployment stage. If a response ends up being malformed, violates the schema, or fails policy checks, the generation retries up to the configured attempt amounts (currently 5). This design was chosen as free text generation is difficult to validate, so having a schema for the model to follow makes this easier, we are able to verify it is safe to execute, and that it executes in the intended way.
 
 The specification includes public challenge metadata, deployment instructions, private learning metadata, and private verification metadata. Listing~\ref{lst:vulnerability-spec-schema} shows an abbreviated version of the schema boundary.
 
@@ -381,7 +381,7 @@ The application is implemented with Next.js, React, TypeScript, Drizzle ORM, SQL
 		\hline
 		Challenge APIs and tutor                 & \lstinline|app/api/challenges/*|, \lstinline|app/api/chat/route.ts|, \lstinline|ChatPanel.tsx|                         \\
 		\hline
-		Evaluation support                       & \lstinline|scripts/evaluate.ts|                                                                                       \\
+		Evaluation support                       & \lstinline|scripts/evaluate.ts|                                                                                        \\
 		\hline
 	\end{tabular}
 \end{table}
@@ -459,7 +459,7 @@ The injection boundary is defined inside the \lstinline{VulnerabilitySpec}, with
 	\item Performs a final restart on required services to ensure all are running smoothly.
 \end{enumerate}
 
-When using a staging directory to push files, we have to use \lstinline{pct push} rather than \lstinline{pct exec} as this could cause shell escaping issues where file content may contain quotes, dollar signs or other special characters. These are common in PHP, SQL, HTML and JavaScript code that is commonly copied for web vulneraiblities. Having a staging section means that we can avoid this, however, this does partially come at a increased time cost as they are copied twice, but for smaller scale vulnerabilities, this is negligible.
+When using a staging directory to push files, we have to use \lstinline{pct push} rather than \lstinline{pct exec} as this could cause shell escaping issues where file content may contain quotes, dollar signs or other special characters. These are common in PHP, SQL, HTML and JavaScript code that is commonly copied for web vulnerabilities. Having a staging section means that we can avoid this, however, this does partially come at a increased time cost as they are copied twice, but for smaller scale vulnerabilities, this is negligible.
 
 Furthermore, we restart the services at the end again as during testing, we noticed that some setup commands to enable a site to run, create symlinks or modify configurations require the setup commands to run first, so we do this step again to ensure that the state is as expected. For example, without this, a web server would continue serving default configurations, rather than the intentionally vulnerable ones even though the files are present, by doing this final restart, we can ensure that post setup changes are loaded.
 
@@ -496,7 +496,7 @@ One implementation problem was that early evaluation failures were too broad. A 
 
 \subsection{Challenge Launch Implementation}\label{sec:challenge-launch_implementation}
 
-The launch route is located in \lstinline{app/api/challenge/launch/route.ts}. It uses server sent events to continually update the user as to the state of the challenge whilst it is being created. Authentication, SSH key validation, active challenge checks, and request validation occur before we being the stream to the user. Once the user has selected a type of challenge, and difficulty, and we have done all the verification on the backend, the stream begins, and the user receives progress and errors relating to the challenge.
+The launch route is located in \lstinline{app/api/challenge/launch/route.ts}. It uses server sent events to continually update the user as to the state of the challenge whilst it is being created. Authentication, SSH key validation, active challenge checks, and request validation occur before we begin the stream to the user. Once the user has selected a type of challenge, and difficulty, and we have done all the verification on the backend, the stream begins, and the user receives progress and errors relating to the challenge.
 
 The progress messages relate to generation, verficiation, deployment, injection, and health verification. On success, it returns the object with the SSH command the user would use, on failure, it attempts to destroy the container, and returns an error message to the user. It also handles a race condition, as generation and injection can take a while, the route checks again for an active challenge immediately before inserting a new challenge. If there is another challenge which has been inserted into the database, the duplicate is cleaned up.
 

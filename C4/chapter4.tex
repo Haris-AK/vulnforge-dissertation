@@ -106,7 +106,7 @@ Secondly, the number of repeated runs was limited by AI cost. Full evaluations r
 
 The overall success rate of 76\% shows that the system can complete the full lifecycle for a majority of generated challenges. This is a meaningful result because each successful run required several independently fallible stages to work together: LLM generation, schema and policy validation, container deployment, vulnerability injection, verification, exploit, and cleanup.
 
-The strongest result is cleanup, every deployed container that reached the cleanup stage was successfully destroyed. This is important because VulnForge intentionally creates vulnerable machines. Even when a generated challenge fails, the platform must avoid leaving unnecessary containers running.
+The strongest result is cleanup, every deployed container that reached the cleanup stage was successfully destroyed. This matters for VulnForge because failed vulnerable containers should not remain online. Even when a generated challenge fails, the platform must avoid leaving unnecessary containers running.
 
 The weakest stage was exploit verification, with 61 out of 75 runs passing. This indicates that the main limitation is not basic container orchestration but verifying the exploit, the generated environment and generated validation logic do not always agree on a working exploit path to the flag.
 
