@@ -115,6 +115,7 @@ main: $(MAIN).tex qdissertation.cls bibliography.bib acronyms.tex \
 	cd $(BUILD_DIR) && BIBINPUTS=..: bibtex $(MAIN)
 	lualatex -interaction=nonstopmode -file-line-error -shell-escape -output-directory=$(BUILD_DIR) $(MAIN).tex
 	cd $(BUILD_DIR) && makeglossaries $(MAIN)
+	cp $(BUILD_DIR)/$(MAIN).acr .
 	lualatex -interaction=nonstopmode -file-line-error -shell-escape -output-directory=$(BUILD_DIR) $(MAIN).tex
 	lualatex -interaction=nonstopmode -file-line-error -shell-escape -output-directory=$(BUILD_DIR) $(MAIN).tex
 	cp $(BUILD_DIR)/$(MAIN).pdf $(MAIN).pdf

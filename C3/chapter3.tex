@@ -131,7 +131,7 @@ The architecture of VulnForge uses a full stack Next.js application. It is conne
 	\label{fig:system-architecture}
 \end{figure}
 
-Figure~\ref{fig:system-architecture} shows the deployment boundary used throughout the project. The learner interacts only with the web application and their assigned container. OpenRouter calls occur server side, with Ansible and Proxmox never being exposed to the user. To reproduce this system, a reader would need a Next.js application, \gls{API} keys, a SQLite database, Ansible playbooks, an OpenRouter model, and a Proxmox host. This design was chosen in order to minimise the number of entry points the user has to interact with, and also to make the system reproducible. If someone was to reproduce the system, they could replace the web app with another or change the orchestration layer, with all other components still working as expected. It also makes the system easier to test as we can clearly see where each stage fails.
+Figure~\ref{fig:system-architecture} shows the deployment boundary used throughout the project. The learner interacts only with the web application and their assigned container. OpenRouter calls occur server side, with Ansible and Proxmox never being exposed to the user. To reproduce this system, a reader would need a Next.js application, \gls{api} keys, a SQLite database, Ansible playbooks, an OpenRouter model, and a Proxmox host. This design was chosen in order to minimise the number of entry points the user has to interact with, and also to make the system reproducible. If someone was to reproduce the system, they could replace the web app with another or change the orchestration layer, with all other components still working as expected. It also makes the system easier to test as we can clearly see where each stage fails.
 
 The web application is the centre of the project from a users perspective. It validates user input, manages accounts and sessions, stores challenge state, invokes the LLM, invokes container orchestration, presents the challenge, and confirms completion. Students do not receive Proxmox credentials, Ansible inventory data, API data, flags, generated validation commands, or the private solution summary while a challenge is active.
 
@@ -381,7 +381,7 @@ The application is implemented with Next.js, React, TypeScript, Drizzle ORM, SQL
 		\hline
 		Challenge APIs and tutor                 & \lstinline|app/api/challenges/*|, \lstinline|app/api/chat/route.ts|, \lstinline|ChatPanel.tsx|                         \\
 		\hline
-		Evaluation support                       & \lstinline|scripts/evaluate.ts|
+		Evaluation support                       & \lstinline|scripts/evaluate.ts|                                                                                       \\
 		\hline
 	\end{tabular}
 \end{table}
