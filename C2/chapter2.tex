@@ -13,11 +13,11 @@
 
 \section{Introduction}\label{sec:background-intro}
 
-This chapter reviews the educational and technical background relating to VulnForge. It considers practical cyber security training, the role of \glspl{ctf} and cyber ranges, then examines prior attempts at procedural challenge generation. It then discusses evidence that \glspl{llm} can generate insecure code, the role of adaptive tutoring, and the containment issues related to deploying deliberately vulnerable machines. The chapter concludes by identifying the gap that VulnForge addresses: whether generated, validated, and short-lived vulnerable environments can support reusable cyber security training in a controlled setting.
+VulnForge sits between three key technical areas, cyber security training, automated challenge generation and safe deployment of vulnerable systems. This chapter considers existing cyber security training, the role of \glspl{ctf} and cyber ranges, then examines prior attempts at procedural challenge generation. It then discusses evidence that \glspl{llm} can generate insecure code, the role of adaptive tutoring, and the containment issues related to deploying deliberately vulnerable machines. The chapter concludes by identifying the gap that VulnForge addresses: whether generated, validated, and short lived vulnerable environments can support reusable cyber security training in a controlled setting.
 
 \section{Context}\label{sec:context}
 
-Cyber security education has steadily moved towards practical, scenario-based learning, where learners develop skills by applying techniques rather than only learning definitions. Students need to understand how vulnerabilities are discovered, exploited, and mitigated in realistic settings, rather than only recognising terms such as SQL injection or privilege escalation. \gls{ctf} exercises have therefore become a widely used educational tool, with prior work arguing that they complement traditional teaching and cover knowledge and skills in ways that map well to cyber security training~\citep{svabensky_cybersecurity_2021}.
+Cyber security education has steadily moved towards practical, scenario based learning, where learners develop skills by applying techniques rather than only learning definitions. Students need to understand how vulnerabilities are discovered, exploited, and mitigated in realistic settings, rather than only recognising terms such as SQL injection or privilege escalation. \gls{ctf} exercises have therefore become a widely used educational tool, with prior work arguing that they complement traditional teaching and cover knowledge and skills in ways that map well to cyber security training~\citep{svabensky_cybersecurity_2021}.
 
 Within this context, VulnForge focuses on a specific design problem: whether generative AI can be used to create and manage personalised vulnerable training environments that are useful for practice while remaining operationally safe and practically deployable.
 
@@ -35,7 +35,7 @@ TryHackMe~\citep{noauthor_tryhackme_nodate}, founded in 2018, takes a beginner-o
 
 Including aspects of a CTF is particularly relevant here because it provides a manageable pedagogical unit: a bounded task with a clear goal, observable progress, and explicit proof of successful exploitation. Švábenský et al. (2021)~\citep{svabensky_automated_2024} describe CTFs as a "popular form of cybersecurity education, where students solve hands-on tasks in an informal, game-like setting". However, traditional CTF content raises questions about replayability, variety, and personalisation. Once users have exhausted a fixed content library, the value of repeated practice may decline. Švábenský's discussion of personalised training paths supports the value of adapting challenge selection and sequencing to learners, which is one motivation for VulnForge's generated challenge model.
 
-These platforms and studies show that practical, challenge-based security training is valuable, but also highlight the importance of variation, replayability, and contextual support. Existing platforms provide structured environments in which learners can practise techniques, but much of their value depends on the availability of suitably challenging content. VulnForge builds on this model, but explores whether challenge content can be generated dynamically while still being deployed, validated, and supported through a controlled learning environment.
+These platforms and studies show that practical, challenge based security training is valuable, but also highlight the importance of variation, replayability, and contextual support. Existing platforms provide structured environments in which learners can practise techniques, but much of their value depends on the availability of suitably challenging content. VulnForge builds on this model, but explores whether challenge content can be generated dynamically while still being deployed, validated, and supported through a controlled learning environment.
 
 
 \section{Procedural Challenge Generation}\label{sec:procedural}
@@ -47,7 +47,7 @@ The most recent example of an LLM-driven agent is AgentCyTE~\citep{rodriguez_age
 
 \begin{longtable}{|p{0.13\textwidth}|p{0.31\textwidth}|p{0.36\textwidth}|}
 	\caption{Comparison of procedural and automated challenge generation systems}
-	\label{tab:procedural-generation-comparison} \\
+	\label{tab:procedural-generation-comparison}                                                       \\
 	\hline
 	\textbf{System} & \textbf{Generation method}         & \textbf{Limitation relevant to VulnForge}   \\
 	\hline

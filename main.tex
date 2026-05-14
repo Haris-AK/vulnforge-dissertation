@@ -261,17 +261,17 @@
 % Add \dedication{...} and \makededication separately if desired.
 \maketitle{%
 	% Abstract: typically 200--300 words. State problem, methods, and main results.
-	Practical cyber security education often relies on Capture the Flag exercises and cyber ranges to give learners hands on experience with vulnerabilities.  However, many existing platforms use static, pre authored challenges, which can reduce replayability once solutions are known or memorised.
+	Practical cyber security education often relies on \gls{ctf} exercises and cyber ranges to give learners hands on experience with vulnerabilities.  However, many existing platforms use static, pre authored challenges, which can reduce replayability once solutions are known.
 
-	This project presents VulnForge, an educational platform that investigates whether generative AI can be used to create, deploy, verify, and clean up short-lived vulnerable Linux environments for cyber security training.
+	This project presents VulnForge, an educational platform that investigates whether generative AI can be used to create, deploy, verify, and clean up vulnerable Linux environments for cyber security training.
 
-	VulnForge combines a web application, structured large language model generation, Ansible automation, Proxmox hosted Ubuntu LXC containers, and an
-	AI supported tutoring interface. Learners can select a vulnerability category and difficulty level, launch an isolated environment, connect to it over SSH, attempt exploitation, submit a flag, and receive contextual guidance. Because model generated content cannot be assumed to be correct or safe, the system constrains generation through schemas, policy checks, deployment restrictions, health checks, flag protection checks, exploit verification, privilege separation, and automated cleanup.
+	VulnForge combines a web application, structured \gls{llm} generation, Ansible automation, Proxmox hosted Ubuntu LXC containers, and an
+	AI supported tutoring interface. Learners can select a vulnerability category and difficulty level, launch an isolated environment, connect to it over SSH, attempt exploitation, submit a flag, and receive contextual guidance. Because model generated content cannot be assumed to be correct or safe, the system constrains generation through schemas, health checks, exploit verification, and automated cleanup.
 
 	The platform was evaluated using a full lifecycle harness across 75 generated challenges covering five vulnerability categories and three difficulty
 	levels. The results showed that 57 out of 75 runs completed successfully end to end, with high generation, deployment, injection, and cleanup success rates. The main weaknesses appeared in verification and exploit reliability, showing that although the architecture is feasible, generated challenges do not always produce a consistent or reliable exploit path.
 
-	Overall, VulnForge demonstrates that AI assisted generation of vulnerable training environments is technically viable in a controlled educational setting, but also highlights the importance of validation and containment. The project shows promise for improving challenge variety and replayability, while identifying reliability, safety, and pedagogical calibration as key areas for future work.
+	Overall, VulnForge demonstrates that LLM generated vulnerable environments can work, but also highlights the importance of validation and containment. The successful runs demonstrate that the approach is feasible in a controlled prototype, but the failed runs show that generation alone is not enough, the environment and checks surrounding it are just as important. The main lesson from the project is that there is promise for improving challenge variety and replayability, while identifying reliability, safety, and pedagogical calibration as key areas for future work.
 }
 
 % -----------------------------------------------------------------------------

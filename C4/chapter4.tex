@@ -6,7 +6,7 @@
 %
 % =============================================================================
 
-This section evaluates to what extent did VulnForge achieve its main goal, to generate, deploy, verify, use and clean up short lived vulnerable environments for cyber security education. The evaluation focuses on the complete lifecycle of the application. A generated challenge will only be useful if the model output can be turned into a working container, the leaner is able to access it, the flag is achievable, the intended exploit can access it and the infrastructure is cleaned up after.
+The evaluation tests VulnForge as a complete pipeline rather than separate components. It focuses on the complete lifecycle of the application. This is stricter than just checking whether the LLM can produce a vulnerability, or Ansible can deploy a container, as both of those can occur, whilst still having the challenge be unusable.
 
 We address four key questions:
 \begin{enumerate}
@@ -239,7 +239,7 @@ The evaluation harness provides the strongest evidence for requirements connecte
 	\hline
 	\endlastfoot
 
-	FR1         & Sign up, log in, log out, remain authenticated.                 & Manual checks           & Account creation, login, page refresh, and logout manually checked. Basic auth flow validated.                                                                                                        \\
+	FR1         & Sign up, log in, log out, remain authenticated.                 & Manual checks           & Account creation, login, page refresh, and logout manually checked. Basic auth flow validated.                                                                                                         \\
 	\hline
 	FR2         & Store and update an SSH public key.                             & Manual checks           & Settings page tested for key storage and update. Launch route refuses to proceed without a configured key.                                                                                             \\
 	\hline
@@ -279,3 +279,5 @@ The most important distinction is that this validation confirms functional behav
 \subsection{Limitations}\label{sec:eval-limitations}
 
 The evaluation has several limitations. First, the sample size was limited by both compute and AI token credits. More runs would improve confidence, especially for weaker categories such as insecure file permissions and for category and difficulty combinations with only 60.0\% success. Secondly, concurrency affected the evaluation environment. The final run used a concurrency value of 15 to complete in a practical time, but this placed load on the Proxmox host and produced one infrastructure failure. A future evaluation should separate two experiments, a low concurrency correctness run to measure generated challenge quality, and a high concurrency stress run to measure infrastructure capacity. Thirdly, the evaluation does not include a formal user study. It verifies technical solvability, but not learner experience, hint usefulness, or perceived difficulty, however, this was not feasible in the projects timeframe. Future work should include either expert review of generated challenges or small task based user testing. Fourthly, failure classifications are heuristic. They are useful triage labels, but they are not definitive proof of root cause. Manual review remains necessary for uncertain semantic failures.
+
+A further limitation is that the evaluation did not systematically test prompt injection, only manually. This matters because VulnForge uses LLMs both for challenge generation and for the AI tutor. The existing mechanisms do provide some protection, but we do not prove robustness against adversarial prompts. For example, a learner could try to make the tutor ignore its instructions, reveal the solution incrementally, encode the answer, or paraphrase the exploit path without reproducing the exact stored solution text. Therefore, the evaluation demonstrates that the system works under normal expected use, but it does not demonstrate that the LLM components are entirely secure against hostile prompting, only having minor protections.
