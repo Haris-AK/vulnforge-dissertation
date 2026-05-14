@@ -16,7 +16,7 @@ We address four key questions:
 	\item What weaknesses are shown from the project from the evaluation data?
 \end{enumerate}
 
-The results show that VulnForge does work as an end to end prototype for the majority of accessed challenges. 57 / 75 full lifecycle evaluations succeeded. This evidence shows that the architecture is viable, however, there is also failures that mean the system is not consistently reliable. The most evident weaknesses are generation failures and validation checks, with some evaluation weakenesses being caused by local infrastructure capacity and AI credit contraints.
+The results show that VulnForge does work as an end to end prototype for the majority of accessed challenges. 57 / 75 full lifecycle evaluations succeeded. This evidence shows that the architecture is viable, however, there is also failures that mean the system is not consistently reliable. The most evident weaknesses are generation failures and validation checks, with some evaluation weaknesses being caused by local infrastructure capacity and AI credit constraints.
 
 \subsection{Evaluation method}\label{sec:eval-method}
 
@@ -53,7 +53,7 @@ Each evaluation run uses the following lifecycle:
 \begin{enumerate}
 	\item Generate a structured vulnerability specification.
 	\item Validate the response against the Zod schema and policy checks.
-	\item Deploy an Ubuntu 24.04 LXC container with Ansible and Proxomox.
+	\item Deploy an Ubuntu 24.04 LXC container with Ansible and Proxmox.
 	\item Inject generated files, packages, services and setup commands.
 	\item Run the health checks, flag checks and exploit checks.
 	\item Record the evidence in JSON, CSV and markdown.
